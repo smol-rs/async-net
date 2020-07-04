@@ -1,0 +1,22 @@
+[package]
+name = "async-net"
+version = "0.1.0"
+authors = ["Stjepan Glavina <stjepang@gmail.com>"]
+edition = "2018"
+description = "Async networking primitives for TCP/UDP/Unix communication"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/stjepang/async-net"
+homepage = "https://github.com/stjepang/async-net"
+documentation = "https://docs.rs/async-net"
+keywords = ["networking", "uds", "mio", "reactor", "std"]
+categories = ["asynchronous", "network-programming", "os"]
+readme = "README.md"
+
+[dependencies]
+async-io = "0.1.1"
+blocking = "0.4.6"
+futures-io = { version = "0.3.5", default-features = false, features = ["std"] }
+futures-util = { version = "0.3.5", default-features = false, features = ["std", "io"] }
+
+[dev-dependencies]
+futures = { version = "0.3.5", default-features = false, features = ["std"] }
