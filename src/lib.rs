@@ -21,8 +21,8 @@
 //! let mut buf = vec![0u8; 1024];
 //!
 //! loop {
-//!     let (n, peer) = socket.recv_from(&mut buf).await?;
-//!     socket.send_to(&buf[..n], &peer).await?;
+//!     let (n, addr) = socket.recv_from(&mut buf).await?;
+//!     socket.send_to(&buf[..n], &addr).await?;
 //! }
 //! # std::io::Result::Ok(()) });
 //! ```
