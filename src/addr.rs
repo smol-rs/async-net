@@ -1,3 +1,4 @@
+use std::fmt;
 use std::future::Future;
 use std::io;
 use std::mem;
@@ -45,6 +46,12 @@ pub enum ToSocketAddrsFuture<I> {
     Resolving(Pin<Box<dyn Future<Output = io::Result<I>> + Send>>),
     Ready(io::Result<I>),
     Done,
+}
+
+impl<I> fmt::Debug for ToSocketAddrsFuture<I> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ToSocketAddrsFuture")
+    }
 }
 
 impl<I: Iterator<Item = SocketAddr> + Unpin> Future for ToSocketAddrsFuture<I> {
