@@ -31,7 +31,7 @@ use crate::addr::AsyncToSocketAddrs;
 ///
 /// ```no_run
 /// use async_net::TcpListener;
-/// use futures::prelude::*;
+/// use futures_lite::*;
 ///
 /// # blocking::block_on(async {
 /// let listener = TcpListener::bind("127.0.0.1:8080").await?;
@@ -149,7 +149,7 @@ impl TcpListener {
     ///
     /// ```no_run
     /// use async_net::TcpListener;
-    /// use futures::prelude::*;
+    /// use futures_lite::*;
     ///
     /// # blocking::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -258,7 +258,7 @@ impl<'a> Stream for Incoming<'a> {
 ///
 /// ```no_run
 /// use async_net::TcpStream;
-/// use futures::prelude::*;
+/// use futures_lite::*;
 ///
 /// # blocking::block_on(async {
 /// let mut stream = TcpStream::connect("127.0.0.1:8080").await?;

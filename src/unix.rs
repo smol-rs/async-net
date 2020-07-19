@@ -30,7 +30,7 @@ use futures_lite::*;
 ///
 /// ```no_run
 /// use async_net::unix::UnixListener;
-/// use futures::prelude::*;
+/// use futures_lite::*;
 ///
 /// # blocking::block_on(async {
 /// let listener = UnixListener::bind("/tmp/socket")?;
@@ -52,7 +52,7 @@ impl UnixListener {
     ///
     /// ```no_run
     /// use async_net::unix::UnixListener;
-    /// use futures::prelude::*;
+    /// use futures_lite::*;
     ///
     /// # blocking::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
@@ -99,7 +99,7 @@ impl UnixListener {
     ///
     /// ```no_run
     /// use async_net::unix::UnixListener;
-    /// use futures::prelude::*;
+    /// use futures_lite::*;
     ///
     /// # blocking::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
@@ -181,7 +181,7 @@ impl Stream for Incoming<'_> {
 ///
 /// ```no_run
 /// use async_net::unix::UnixStream;
-/// use futures::prelude::*;
+/// use futures_lite::*;
 ///
 /// # blocking::block_on(async {
 /// let mut stream = UnixStream::connect("/tmp/socket").await?;
