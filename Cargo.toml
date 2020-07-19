@@ -13,6 +13,6 @@ categories = ["asynchronous", "network-programming", "os"]
 readme = "README.md"
 
 [dependencies]
-async-io = { path = "../async-io" }
+async-io = "0.1.3"
 blocking = "0.4.7"
 futures-lite = "0.1.3"
