@@ -1,4 +1,3 @@
-use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -7,6 +6,7 @@ use std::os::windows::io::{AsRawSocket, RawSocket};
 use std::sync::Arc;
 
 use async_io::Async;
+use futures_lite::*;
 
 use crate::addr::AsyncToSocketAddrs;
 

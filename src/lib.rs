@@ -37,6 +37,6 @@ mod addr;
 mod tcp;
 mod udp;
 
+pub use addr::AsyncToSocketAddrs;
 pub use tcp::{Incoming, TcpListener, TcpStream};
 pub use udp::UdpSocket;
-pub use addr::AsyncToSocketAddrs;

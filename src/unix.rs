@@ -2,8 +2,6 @@
 //!
 //! This module is an async version of [`std::os::unix::net`].
 
-use std::future::Future;
-use std::io;
 use std::net::Shutdown;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -16,8 +14,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use async_io::Async;
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::Stream;
+use futures_lite::*;
 
 /// A Unix server, listening for connections.
 ///
@@ -161,9 +158,9 @@ impl Stream for Incoming<'_> {
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let future = self.0.accept();
-        futures_util::pin_mut!(future);
+        pin!(future);
 
-        let (socket, _) = futures_util::ready!(future.poll(cx))?;
+        let (socket, _) = ready!(future.poll(cx))?;
         Poll::Ready(Some(Ok(socket)))
     }
 }

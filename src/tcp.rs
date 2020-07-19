@@ -1,5 +1,4 @@
-use std::future::Future;
-use std::io::{self, IoSlice, IoSliceMut};
+use std::io::{IoSlice, IoSliceMut};
 use std::net::SocketAddr;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -10,8 +9,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use async_io::Async;
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::Stream;
+use futures_lite::*;
 
 use crate::addr::AsyncToSocketAddrs;
 
@@ -233,9 +231,9 @@ impl<'a> Stream for Incoming<'a> {
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let future = self.0.accept();
-        futures_util::pin_mut!(future);
+        pin!(future);
 
-        let (socket, _) = futures_util::ready!(future.poll(cx))?;
+        let (socket, _) = ready!(future.poll(cx))?;
         Poll::Ready(Some(Ok(socket)))
     }
 }
