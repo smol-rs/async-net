@@ -32,7 +32,7 @@ use futures_lite::*;
 /// use async_net::unix::UnixListener;
 /// use futures_lite::*;
 ///
-/// # blocking::block_on(async {
+/// # futures_lite::future::block_on(async {
 /// let listener = UnixListener::bind("/tmp/socket")?;
 /// let mut incoming = listener.incoming();
 ///
@@ -54,7 +54,7 @@ impl UnixListener {
     /// use async_net::unix::UnixListener;
     /// use futures_lite::*;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
     /// let mut incoming = listener.incoming();
     ///
@@ -79,7 +79,7 @@ impl UnixListener {
     /// ```no_run
     /// use async_net::unix::UnixListener;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
     /// let (stream, addr) = listener.accept().await?;
     /// # std::io::Result::Ok(()) });
@@ -101,7 +101,7 @@ impl UnixListener {
     /// use async_net::unix::UnixListener;
     /// use futures_lite::*;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
     /// let mut incoming = listener.incoming();
     ///
@@ -122,7 +122,7 @@ impl UnixListener {
     /// ```no_run
     /// use async_net::unix::UnixListener;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
     /// println!("Local address is {:?}", listener.local_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -183,7 +183,7 @@ impl Stream for Incoming<'_> {
 /// use async_net::unix::UnixStream;
 /// use futures_lite::*;
 ///
-/// # blocking::block_on(async {
+/// # futures_lite::future::block_on(async {
 /// let mut stream = UnixStream::connect("/tmp/socket").await?;
 /// stream.write_all(b"hello").await?;
 ///
@@ -202,7 +202,7 @@ impl UnixStream {
     /// ```no_run
     /// use async_net::unix::UnixStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = UnixStream::connect("/tmp/socket").await?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -219,7 +219,7 @@ impl UnixStream {
     /// ```no_run
     /// use async_net::unix::UnixStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let (stream1, stream2) = UnixStream::pair()?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -237,7 +237,7 @@ impl UnixStream {
     /// ```no_run
     /// use async_net::unix::UnixStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = UnixStream::connect("/tmp/socket").await?;
     /// println!("Local address is {:?}", stream.local_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -253,7 +253,7 @@ impl UnixStream {
     /// ```no_run
     /// use async_net::unix::UnixStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = UnixStream::connect("/tmp/socket").await?;
     /// println!("Connected to {:?}", stream.peer_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -271,7 +271,7 @@ impl UnixStream {
     /// use async_net::unix::UnixStream;
     /// use std::net::Shutdown;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = UnixStream::connect("/tmp/socket").await?;
     /// stream.shutdown(Shutdown::Both)?;
     /// # std::io::Result::Ok(()) });
@@ -368,7 +368,7 @@ impl AsyncWrite for &UnixStream {
 /// ```no_run
 /// use async_net::unix::UnixDatagram;
 ///
-/// # blocking::block_on(async {
+/// # futures_lite::future::block_on(async {
 /// let socket = UnixDatagram::bind("/tmp/socket1")?;
 /// socket.send_to(b"hello", "/tmp/socket2").await?;
 ///
@@ -387,7 +387,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::bind("/tmp/socket")?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -404,7 +404,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -420,7 +420,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let (socket1, socket2) = UnixDatagram::pair()?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -444,7 +444,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// socket.connect("/tmp/socket")?;
     /// # std::io::Result::Ok(()) });
@@ -461,7 +461,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::bind("/tmp/socket")?;
     /// println!("Bound to {:?}", socket.local_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -477,7 +477,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// socket.connect("/tmp/socket")?;
     /// println!("Connected to {:?}", socket.peer_addr()?);
@@ -496,7 +496,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::bind("/tmp/socket")?;
     ///
     /// let mut buf = vec![0; 1024];
@@ -517,7 +517,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// socket.send_to(b"hello", "/tmp/socket").await?;
     /// # std::io::Result::Ok(()) });
@@ -535,7 +535,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// socket.connect("/tmp/socket")?;
     ///
@@ -556,7 +556,7 @@ impl UnixDatagram {
     /// ```no_run
     /// use async_net::unix::UnixDatagram;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// socket.connect("/tmp/socket")?;
     /// socket.send(b"hello").await?;
@@ -577,7 +577,7 @@ impl UnixDatagram {
     /// use async_net::unix::UnixDatagram;
     /// use std::net::Shutdown;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;
     /// socket.shutdown(Shutdown::Both)?;
     /// # std::io::Result::Ok(()) });

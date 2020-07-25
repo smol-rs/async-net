@@ -7,6 +7,8 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use blocking::unblock;
+
 /// Converts or resolves addresses to [`SocketAddr`] values.
 ///
 /// This trait currently only appears in function signatures and cannot be used directly. However,
@@ -23,8 +25,8 @@ use std::task::{Context, Poll};
 /// use blocking::unblock;
 /// use std::net::ToSocketAddrs;
 ///
-/// # blocking::block_on(async {
-/// let addrs = unblock(|| "google.com".to_socket_addrs()).await?;
+/// # futures_lite::future::block_on(async {
+/// let addrs = unblock!("google.com".to_socket_addrs())?;
 /// # std::io::Result::Ok(()) });
 /// ```
 pub trait AsyncToSocketAddrs: Sealed {}
@@ -159,11 +161,13 @@ impl Sealed for (&str, u16) {
         }
 
         let host = host.to_string();
-        let task = blocking::unblock(move || {
-            let addr = (host.as_str(), port);
-            ToSocketAddrs::to_socket_addrs(&addr)
-        });
-        ToSocketAddrsFuture::Resolving(Box::pin(task))
+        let future = async move {
+            unblock! {
+                let addr = (host.as_str(), port);
+                ToSocketAddrs::to_socket_addrs(&addr)
+            }
+        };
+        ToSocketAddrsFuture::Resolving(Box::pin(future))
     }
 }
 
@@ -188,9 +192,8 @@ impl Sealed for str {
         }
 
         let addr = self.to_string();
-        let task =
-            blocking::unblock(move || std::net::ToSocketAddrs::to_socket_addrs(addr.as_str()));
-        ToSocketAddrsFuture::Resolving(Box::pin(task))
+        let future = async { unblock!(std::net::ToSocketAddrs::to_socket_addrs(addr.as_str())) };
+        ToSocketAddrsFuture::Resolving(Box::pin(future))
     }
 }
 

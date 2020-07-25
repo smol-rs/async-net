@@ -16,7 +16,7 @@
 //! ```no_run
 //! use async_net::UdpSocket;
 //!
-//! # blocking::block_on(async {
+//! # futures_lite::future::block_on(async {
 //! let socket = UdpSocket::bind("127.0.0.1:8080").await?;
 //! let mut buf = vec![0u8; 1024];
 //!

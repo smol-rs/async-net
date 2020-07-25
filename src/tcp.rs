@@ -33,7 +33,7 @@ use crate::addr::AsyncToSocketAddrs;
 /// use async_net::TcpListener;
 /// use futures_lite::*;
 ///
-/// # blocking::block_on(async {
+/// # futures_lite::future::block_on(async {
 /// let listener = TcpListener::bind("127.0.0.1:8080").await?;
 /// let mut incoming = listener.incoming();
 ///
@@ -64,7 +64,7 @@ impl TcpListener {
     /// ```no_run
     /// use async_net::TcpListener;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:80").await?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -76,7 +76,7 @@ impl TcpListener {
     /// use async_net::TcpListener;
     /// use std::net::SocketAddr;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let addrs = [
     ///     SocketAddr::from(([127, 0, 0, 1], 80)),
     ///     SocketAddr::from(([127, 0, 0, 1], 443)),
@@ -111,7 +111,7 @@ impl TcpListener {
     /// use async_net::TcpListener;
     /// use std::net::SocketAddr;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:0").await?;
     /// println!("Listening on {}", listener.local_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -128,7 +128,7 @@ impl TcpListener {
     /// ```no_run
     /// use async_net::TcpListener;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:8080").await?;
     /// let (stream, addr) = listener.accept().await?;
     /// # std::io::Result::Ok(()) });
@@ -151,7 +151,7 @@ impl TcpListener {
     /// use async_net::TcpListener;
     /// use futures_lite::*;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:0").await?;
     /// let mut incoming = listener.incoming();
     ///
@@ -175,7 +175,7 @@ impl TcpListener {
     /// ```no_run
     /// use async_net::TcpListener;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:80").await?;
     /// listener.set_ttl(100)?;
     /// assert_eq!(listener.ttl()?, 100);
@@ -195,7 +195,7 @@ impl TcpListener {
     /// ```no_run
     /// use async_net::TcpListener;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:80").await?;
     /// listener.set_ttl(100)?;
     /// # std::io::Result::Ok(()) });
@@ -260,7 +260,7 @@ impl<'a> Stream for Incoming<'a> {
 /// use async_net::TcpStream;
 /// use futures_lite::*;
 ///
-/// # blocking::block_on(async {
+/// # futures_lite::future::block_on(async {
 /// let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
 /// stream.write_all(b"hello").await?;
 ///
@@ -287,7 +287,7 @@ impl TcpStream {
     /// ```
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("example.com:80").await?;
     /// # std::io::Result::Ok(()) });
     /// ```
@@ -298,7 +298,7 @@ impl TcpStream {
     /// use async_net::TcpStream;
     /// use std::net::SocketAddr;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let addrs = [
     ///     SocketAddr::from(([127, 0, 0, 1], 8080)),
     ///     SocketAddr::from(([127, 0, 0, 1], 8081)),
@@ -331,7 +331,7 @@ impl TcpStream {
     /// ```
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("example.com:80").await?;
     /// println!("Local address is {}", stream.local_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -347,7 +347,7 @@ impl TcpStream {
     /// ```
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("example.com:80").await?;
     /// println!("Connected to {}", stream.peer_addr()?);
     /// # std::io::Result::Ok(()) });
@@ -369,7 +369,7 @@ impl TcpStream {
     /// use async_net::TcpStream;
     /// use std::net::Shutdown;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;
     /// stream.shutdown(Shutdown::Both)?;
     /// # std::io::Result::Ok(()) });
@@ -390,7 +390,7 @@ impl TcpStream {
     /// ```no_run
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;
     ///
     /// let mut buf = vec![0; 1024];
@@ -417,7 +417,7 @@ impl TcpStream {
     /// ```no_run
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;
     /// println!("TCP_NODELAY is set to {}", stream.nodelay()?);
     /// # std::io::Result::Ok(()) });
@@ -442,7 +442,7 @@ impl TcpStream {
     /// ```no_run
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;
     /// stream.set_nodelay(false)?;
     /// # std::io::Result::Ok(()) });
@@ -461,7 +461,7 @@ impl TcpStream {
     /// ```no_run
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;
     /// println!("IP_TTL is set to {}", stream.ttl()?);
     /// # std::io::Result::Ok(()) });
@@ -480,7 +480,7 @@ impl TcpStream {
     /// ```no_run
     /// use async_net::TcpStream;
     ///
-    /// # blocking::block_on(async {
+    /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;
     /// stream.set_ttl(100)?;
     /// # std::io::Result::Ok(()) });
