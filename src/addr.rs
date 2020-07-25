@@ -8,6 +8,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use blocking::unblock;
+use futures_lite::future;
 
 /// Converts or resolves addresses to [`SocketAddr`] values.
 ///
@@ -45,7 +46,7 @@ pub trait Sealed {
 }
 
 pub enum ToSocketAddrsFuture<I> {
-    Resolving(Pin<Box<dyn Future<Output = io::Result<I>> + Send>>),
+    Resolving(future::Boxed<io::Result<I>>),
     Ready(io::Result<I>),
     Done,
 }
