@@ -40,3 +40,21 @@ mod udp;
 pub use addr::AsyncToSocketAddrs;
 pub use tcp::{Incoming, TcpListener, TcpStream};
 pub use udp::UdpSocket;
+
+use std::io;
+use std::net::SocketAddr;
+
+/// Converts or resolves addresses to [`SocketAddr`] values.
+///
+/// # Examples
+///
+/// ```
+/// # futures_lite::future::block_on(async {
+/// for addr in async_net::resolve("google.com:80").await? {
+///     println!("{}", addr);
+/// }
+/// # std::io::Result::Ok(()) });
+/// ```
+pub async fn resolve<A: AsyncToSocketAddrs>(addr: A) -> io::Result<Vec<SocketAddr>> {
+    Ok(addr.to_socket_addrs().await?.collect())
+}
