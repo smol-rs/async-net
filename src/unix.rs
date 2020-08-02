@@ -5,13 +5,15 @@
 use std::net::Shutdown;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
-use std::os::unix::net::SocketAddr;
 #[cfg(windows)]
 use std::os::windows::io::{AsRawSocket, RawSocket};
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+
+#[doc(no_inline)]
+pub use std::os::unix::net::SocketAddr;
 
 use async_io::Async;
 use futures_lite::*;
@@ -268,8 +270,7 @@ impl UnixStream {
     /// immediately with an appropriate value (see the documentation of [`Shutdown`]).
     ///
     /// ```no_run
-    /// use async_net::unix::UnixStream;
-    /// use std::net::Shutdown;
+    /// use async_net::{Shutdown, unix::UnixStream};
     ///
     /// # futures_lite::future::block_on(async {
     /// let stream = UnixStream::connect("/tmp/socket").await?;
@@ -574,8 +575,7 @@ impl UnixDatagram {
     /// # Examples
     ///
     /// ```no_run
-    /// use async_net::unix::UnixDatagram;
-    /// use std::net::Shutdown;
+    /// use async_net::{Shutdown, unix::UnixDatagram};
     ///
     /// # futures_lite::future::block_on(async {
     /// let socket = UnixDatagram::unbound()?;

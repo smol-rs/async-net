@@ -40,3 +40,6 @@ mod udp;
 pub use addr::AsyncToSocketAddrs;
 pub use tcp::{Incoming, TcpListener, TcpStream};
 pub use udp::UdpSocket;
+
+#[doc(no_inline)]
+pub use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV4, SocketAddrV6};
