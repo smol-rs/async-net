@@ -147,12 +147,10 @@ impl Sealed for (&str, u16) {
         }
 
         let host = host.to_string();
-        let future = async move {
-            unblock! {
-                let addr = (host.as_str(), port);
-                ToSocketAddrs::to_socket_addrs(&addr)
-            }
-        };
+        let future = unblock(move || {
+            let addr = (host.as_str(), port);
+            ToSocketAddrs::to_socket_addrs(&addr)
+        });
         ToSocketAddrsFuture::Resolving(Box::pin(future))
     }
 }
@@ -178,7 +176,7 @@ impl Sealed for str {
         }
 
         let addr = self.to_string();
-        let future = async { unblock!(std::net::ToSocketAddrs::to_socket_addrs(addr.as_str())) };
+        let future = unblock(move || std::net::ToSocketAddrs::to_socket_addrs(addr.as_str()));
         ToSocketAddrsFuture::Resolving(Box::pin(future))
     }
 }
