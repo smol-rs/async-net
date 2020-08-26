@@ -41,5 +41,21 @@ pub use addr::AsyncToSocketAddrs;
 pub use tcp::{Incoming, TcpListener, TcpStream};
 pub use udp::UdpSocket;
 
+use std::io;
 #[doc(no_inline)]
 pub use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV4, SocketAddrV6};
+
+/// Converts or resolves addresses to [`SocketAddr`] values.
+///
+/// # Examples
+///
+/// ```
+/// # futures_lite::future::block_on(async {
+/// for addr in async_net::resolve("google.com:80").await? {
+///     println!("{}", addr);
+/// }
+/// # std::io::Result::Ok(()) });
+/// ```
+pub async fn resolve<A: AsyncToSocketAddrs>(addr: A) -> io::Result<Vec<SocketAddr>> {
+    Ok(addr.to_socket_addrs().await?.collect())
+}

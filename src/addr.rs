@@ -12,24 +12,9 @@ use futures_lite::future;
 
 /// Converts or resolves addresses to [`SocketAddr`] values.
 ///
-/// This trait currently only appears in function signatures and cannot be used directly. However,
-/// you can still use the [`ToSocketAddrs`] trait from the standard library.
+/// This trait currently only appears in function signatures and cannot be used directly.
 ///
-/// # Examples
-///
-/// To perform a DNS lookup for an address, make [`ToSocketAddrs`] async by wrapping it with the
-/// [`blocking`] crate:
-///
-/// [`blocking`]: https://docs.rs/blocking
-///
-/// ```no_run
-/// use blocking::unblock;
-/// use std::net::ToSocketAddrs;
-///
-/// # futures_lite::future::block_on(async {
-/// let addrs = unblock!("google.com".to_socket_addrs())?;
-/// # std::io::Result::Ok(()) });
-/// ```
+/// However, you can use the [`resolve()`][`crate::resolve()`] function to resolve addresses.
 pub trait AsyncToSocketAddrs: Sealed {}
 
 pub trait Sealed {
