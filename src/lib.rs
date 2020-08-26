@@ -42,7 +42,8 @@ pub use tcp::{Incoming, TcpListener, TcpStream};
 pub use udp::UdpSocket;
 
 use std::io;
-use std::net::SocketAddr;
+#[doc(no_inline)]
+pub use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 /// Converts or resolves addresses to [`SocketAddr`] values.
 ///

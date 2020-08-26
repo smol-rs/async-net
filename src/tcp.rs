@@ -73,8 +73,7 @@ impl TcpListener {
     /// binding to `127.0.0.1:443`:
     ///
     /// ```no_run
-    /// use async_net::TcpListener;
-    /// use std::net::SocketAddr;
+    /// use async_net::{SocketAddr, TcpListener};
     ///
     /// # futures_lite::future::block_on(async {
     /// let addrs = [
@@ -108,8 +107,7 @@ impl TcpListener {
     /// Bind to port 0 and then see which port was assigned by the operating system:
     ///
     /// ```no_run
-    /// use async_net::TcpListener;
-    /// use std::net::SocketAddr;
+    /// use async_net::{SocketAddr, TcpListener};
     ///
     /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -295,8 +293,7 @@ impl TcpStream {
     /// Connect to `127.0.0.1:8080`. If that fails, then try connecting to `127.0.0.1:8081`:
     ///
     /// ```no_run
-    /// use async_net::TcpStream;
-    /// use std::net::SocketAddr;
+    /// use async_net::{SocketAddr, TcpStream};
     ///
     /// # futures_lite::future::block_on(async {
     /// let addrs = [
@@ -366,8 +363,7 @@ impl TcpStream {
     /// # Examples
     ///
     /// ```no_run
-    /// use async_net::TcpStream;
-    /// use std::net::Shutdown;
+    /// use async_net::{Shutdown, TcpStream};
     ///
     /// # futures_lite::future::block_on(async {
     /// let stream = TcpStream::connect("127.0.0.1:8080").await?;

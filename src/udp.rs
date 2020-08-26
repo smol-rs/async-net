@@ -80,8 +80,7 @@ impl UdpSocket {
     /// binding to `127.0.0.1:3401`:
     ///
     /// ```no_run
-    /// use async_net::UdpSocket;
-    /// use std::net::SocketAddr;
+    /// use async_net::{SocketAddr, UdpSocket};
     ///
     /// # futures_lite::future::block_on(async {
     /// let addrs = [
@@ -119,8 +118,7 @@ impl UdpSocket {
     /// Bind to port 0 and then see which port was assigned by the operating system:
     ///
     /// ```no_run
-    /// use async_net::UdpSocket;
-    /// use std::net::SocketAddr;
+    /// use async_net::{SocketAddr, UdpSocket};
     ///
     /// # futures_lite::future::block_on(async {
     /// let socket = UdpSocket::bind("127.0.0.1:0").await?;
