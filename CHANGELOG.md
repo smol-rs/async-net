@@ -1,3 +1,7 @@
+# Version 1.1.0
+
+- Reexport `AddrParseError`.
+
 # Version 1.0.0
 
 - Add `resolve()`.
