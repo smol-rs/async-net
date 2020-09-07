@@ -1,3 +1,7 @@
+# Version 1.2.0
+
+- Update `blocking` and `async-io` to v1.0
+
 # Version 1.1.0
 
 - Reexport `AddrParseError`.
