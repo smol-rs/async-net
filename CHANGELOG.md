@@ -1,3 +1,7 @@
+# Version 1.3.0
+
+- Add type converstions using `From` and `TryFrom` impls.
+
 # Version 1.2.0
 
 - Update `blocking` and `async-io` to v1.0
