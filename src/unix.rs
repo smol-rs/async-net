@@ -2,6 +2,7 @@
 //!
 //! This module is an async version of [`std::os::unix::net`].
 
+use std::convert::TryFrom;
 use std::net::Shutdown;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -131,6 +132,20 @@ impl UnixListener {
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
         self.0.get_ref().local_addr()
+    }
+}
+
+impl From<Async<std::os::unix::net::UnixListener>> for UnixListener {
+    fn from(listener: Async<std::os::unix::net::UnixListener>) -> UnixListener {
+        UnixListener(Arc::new(listener))
+    }
+}
+
+impl TryFrom<std::os::unix::net::UnixListener> for UnixListener {
+    type Error = io::Error;
+
+    fn try_from(listener: std::os::unix::net::UnixListener) -> io::Result<UnixListener> {
+        Ok(UnixListener(Arc::new(Async::new(listener)?)))
     }
 }
 
@@ -279,6 +294,20 @@ impl UnixStream {
     /// ```
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         self.0.get_ref().shutdown(how)
+    }
+}
+
+impl From<Async<std::os::unix::net::UnixStream>> for UnixStream {
+    fn from(stream: Async<std::os::unix::net::UnixStream>) -> UnixStream {
+        UnixStream(Arc::new(stream))
+    }
+}
+
+impl TryFrom<std::os::unix::net::UnixStream> for UnixStream {
+    type Error = io::Error;
+
+    fn try_from(stream: std::os::unix::net::UnixStream) -> io::Result<UnixStream> {
+        Ok(UnixStream(Arc::new(Async::new(stream)?)))
     }
 }
 
@@ -584,6 +613,20 @@ impl UnixDatagram {
     /// ```
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         self.0.get_ref().shutdown(how)
+    }
+}
+
+impl From<Async<std::os::unix::net::UnixDatagram>> for UnixDatagram {
+    fn from(socket: Async<std::os::unix::net::UnixDatagram>) -> UnixDatagram {
+        UnixDatagram(Arc::new(socket))
+    }
+}
+
+impl TryFrom<std::os::unix::net::UnixDatagram> for UnixDatagram {
+    type Error = io::Error;
+
+    fn try_from(socket: std::os::unix::net::UnixDatagram) -> io::Result<UnixDatagram> {
+        Ok(UnixDatagram(Arc::new(Async::new(socket)?)))
     }
 }
 

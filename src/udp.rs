@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -576,6 +577,20 @@ impl UdpSocket {
     /// address, and `interface` is the index of the interface to leave.
     pub fn leave_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
         self.0.get_ref().leave_multicast_v6(multiaddr, interface)
+    }
+}
+
+impl From<Async<std::net::UdpSocket>> for UdpSocket {
+    fn from(socket: Async<std::net::UdpSocket>) -> UdpSocket {
+        UdpSocket(Arc::new(socket))
+    }
+}
+
+impl TryFrom<std::net::UdpSocket> for UdpSocket {
+    type Error = io::Error;
+
+    fn try_from(socket: std::net::UdpSocket) -> io::Result<UdpSocket> {
+        Ok(UdpSocket(Arc::new(Async::new(socket)?)))
     }
 }
 

@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io::{IoSlice, IoSliceMut};
 use std::net::SocketAddr;
 #[cfg(unix)]
@@ -200,6 +201,20 @@ impl TcpListener {
     /// ```
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
         self.0.get_ref().set_ttl(ttl)
+    }
+}
+
+impl From<Async<std::net::TcpListener>> for TcpListener {
+    fn from(listener: Async<std::net::TcpListener>) -> TcpListener {
+        TcpListener(Arc::new(listener))
+    }
+}
+
+impl TryFrom<std::net::TcpListener> for TcpListener {
+    type Error = io::Error;
+
+    fn try_from(listener: std::net::TcpListener) -> io::Result<TcpListener> {
+        Ok(TcpListener(Arc::new(Async::new(listener)?)))
     }
 }
 
@@ -483,6 +498,20 @@ impl TcpStream {
     /// ```
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
         self.0.get_ref().set_ttl(ttl)
+    }
+}
+
+impl From<Async<std::net::TcpStream>> for TcpStream {
+    fn from(stream: Async<std::net::TcpStream>) -> TcpStream {
+        TcpStream(Arc::new(stream))
+    }
+}
+
+impl TryFrom<std::net::TcpStream> for TcpStream {
+    type Error = io::Error;
+
+    fn try_from(stream: std::net::TcpStream) -> io::Result<TcpStream> {
+        Ok(TcpStream(Arc::new(Async::new(stream)?)))
     }
 }
 
