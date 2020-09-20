@@ -1,3 +1,8 @@
+# Version 1.4.0
+
+- Remove `AsyncRead`/`AsyncWrite` impls for `&TcpStream`/`&UnixStream`
+  (technically a breaking change, but the existence of these impls is a bug)
+
 # Version 1.3.0
 
 - Add type converstions using `From` and `TryFrom` impls.
