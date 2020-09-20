@@ -1,3 +1,7 @@
+# Version 1.4.1
+
+- Make `TcpStream` and `UnixStream` implement `Sync`.
+
 # Version 1.4.0
 
 - Remove `AsyncRead`/`AsyncWrite` impls for `&TcpStream`/`&UnixStream`
