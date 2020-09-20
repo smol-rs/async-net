@@ -3,6 +3,8 @@
 //! This module is an async version of [`std::os::unix::net`].
 
 use std::convert::TryFrom;
+use std::fmt;
+use std::io::{Read as _, Write as _};
 use std::net::Shutdown;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -46,9 +48,15 @@ use futures_lite::*;
 /// # std::io::Result::Ok(()) });
 /// ```
 #[derive(Clone, Debug)]
-pub struct UnixListener(Arc<Async<std::os::unix::net::UnixListener>>);
+pub struct UnixListener {
+    inner: Arc<Async<std::os::unix::net::UnixListener>>,
+}
 
 impl UnixListener {
+    fn new(inner: Arc<Async<std::os::unix::net::UnixListener>>) -> UnixListener {
+        UnixListener { inner }
+    }
+
     /// Creates a new [`UnixListener`] bound to the given path.
     ///
     /// # Examples
@@ -68,9 +76,8 @@ impl UnixListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn bind<P: AsRef<Path>>(path: P) -> io::Result<UnixListener> {
-        let path = path.as_ref().to_owned();
         let listener = Async::<std::os::unix::net::UnixListener>::bind(path)?;
-        Ok(UnixListener(Arc::new(listener)))
+        Ok(UnixListener::new(Arc::new(listener)))
     }
 
     /// Accepts a new incoming connection.
@@ -88,8 +95,8 @@ impl UnixListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn accept(&self) -> io::Result<(UnixStream, SocketAddr)> {
-        let (stream, addr) = self.0.accept().await?;
-        Ok((UnixStream(Arc::new(stream)), addr))
+        let (stream, addr) = self.inner.accept().await?;
+        Ok((UnixStream::new(Arc::new(stream)), addr))
     }
 
     /// Returns a stream of incoming connections.
@@ -115,7 +122,7 @@ impl UnixListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn incoming(&self) -> Incoming<'_> {
-        Incoming(self)
+        Incoming { listener: self }
     }
 
     /// Returns the local address this listener is bound to.
@@ -131,13 +138,13 @@ impl UnixListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().local_addr()
+        self.inner.get_ref().local_addr()
     }
 }
 
 impl From<Async<std::os::unix::net::UnixListener>> for UnixListener {
     fn from(listener: Async<std::os::unix::net::UnixListener>) -> UnixListener {
-        UnixListener(Arc::new(listener))
+        UnixListener::new(Arc::new(listener))
     }
 }
 
@@ -145,21 +152,21 @@ impl TryFrom<std::os::unix::net::UnixListener> for UnixListener {
     type Error = io::Error;
 
     fn try_from(listener: std::os::unix::net::UnixListener) -> io::Result<UnixListener> {
-        Ok(UnixListener(Arc::new(Async::new(listener)?)))
+        Ok(UnixListener::new(Arc::new(Async::new(listener)?)))
     }
 }
 
 #[cfg(unix)]
 impl AsRawFd for UnixListener {
     fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
+        self.inner.as_raw_fd()
     }
 }
 
 #[cfg(windows)]
 impl AsRawSocket for UnixListener {
     fn as_raw_socket(&self) -> RawSocket {
-        self.0.as_raw_socket()
+        self.inner.as_raw_socket()
     }
 }
 
@@ -168,13 +175,15 @@ impl AsRawSocket for UnixListener {
 /// This stream is infinite, i.e awaiting the next connection will never result in [`None`]. It is
 /// created by the [`UnixListener::incoming()`] method.
 #[derive(Debug)]
-pub struct Incoming<'a>(&'a UnixListener);
+pub struct Incoming<'a> {
+    listener: &'a UnixListener,
+}
 
 impl Stream for Incoming<'_> {
     type Item = io::Result<UnixStream>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let future = self.0.accept();
+        let future = self.listener.accept();
         pin!(future);
 
         let (socket, _) = ready!(future.poll(cx))?;
@@ -208,10 +217,21 @@ impl Stream for Incoming<'_> {
 /// let n = stream.read(&mut buf).await?;
 /// # std::io::Result::Ok(()) });
 /// ```
-#[derive(Clone, Debug)]
-pub struct UnixStream(Arc<Async<std::os::unix::net::UnixStream>>);
+pub struct UnixStream {
+    inner: Arc<Async<std::os::unix::net::UnixStream>>,
+    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
+    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
+}
 
 impl UnixStream {
+    fn new(inner: Arc<Async<std::os::unix::net::UnixStream>>) -> UnixStream {
+        UnixStream {
+            inner,
+            readable: None,
+            writable: None,
+        }
+    }
+
     /// Creates a Unix connection to given path.
     ///
     /// # Examples
@@ -224,9 +244,8 @@ impl UnixStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn connect<P: AsRef<Path>>(path: P) -> io::Result<UnixStream> {
-        let path = path.as_ref().to_owned();
-        let stream = Arc::new(Async::<std::os::unix::net::UnixStream>::connect(path).await?);
-        Ok(UnixStream(stream))
+        let stream = Async::<std::os::unix::net::UnixStream>::connect(path).await?;
+        Ok(UnixStream::new(Arc::new(stream)))
     }
 
     /// Creates a pair of connected Unix sockets.
@@ -242,9 +261,7 @@ impl UnixStream {
     /// ```
     pub fn pair() -> io::Result<(UnixStream, UnixStream)> {
         let (a, b) = Async::<std::os::unix::net::UnixStream>::pair()?;
-        let a = UnixStream(Arc::new(a));
-        let b = UnixStream(Arc::new(b));
-        Ok((a, b))
+        Ok((UnixStream::new(Arc::new(a)), UnixStream::new(Arc::new(b))))
     }
 
     /// Returns the local address this socket is connected to.
@@ -260,7 +277,7 @@ impl UnixStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().local_addr()
+        self.inner.get_ref().local_addr()
     }
 
     /// Returns the remote address this socket is connected to.
@@ -276,7 +293,7 @@ impl UnixStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().peer_addr()
+        self.inner.get_ref().peer_addr()
     }
 
     /// Shuts down the read half, write half, or both halves of this connection.
@@ -293,13 +310,25 @@ impl UnixStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.0.get_ref().shutdown(how)
+        self.inner.get_ref().shutdown(how)
+    }
+}
+
+impl fmt::Debug for UnixStream {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.inner.fmt(f)
+    }
+}
+
+impl Clone for UnixStream {
+    fn clone(&self) -> UnixStream {
+        UnixStream::new(self.inner.clone())
     }
 }
 
 impl From<Async<std::os::unix::net::UnixStream>> for UnixStream {
     fn from(stream: Async<std::os::unix::net::UnixStream>) -> UnixStream {
-        UnixStream(Arc::new(stream))
+        UnixStream::new(Arc::new(stream))
     }
 }
 
@@ -307,77 +336,121 @@ impl TryFrom<std::os::unix::net::UnixStream> for UnixStream {
     type Error = io::Error;
 
     fn try_from(stream: std::os::unix::net::UnixStream) -> io::Result<UnixStream> {
-        Ok(UnixStream(Arc::new(Async::new(stream)?)))
+        Ok(UnixStream::new(Arc::new(Async::new(stream)?)))
     }
 }
 
 #[cfg(unix)]
 impl AsRawFd for UnixStream {
     fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
+        self.inner.as_raw_fd()
     }
 }
 
 #[cfg(windows)]
 impl AsRawSocket for UnixStream {
     fn as_raw_socket(&self) -> RawSocket {
-        self.0.as_raw_socket()
+        self.inner.as_raw_socket()
     }
 }
 
 impl AsyncRead for UnixStream {
     fn poll_read(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut [u8],
     ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self).poll_read(cx, buf)
-    }
-}
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
 
-impl AsyncRead for &UnixStream {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self.0).poll_read(cx, buf)
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().read(buf) {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.readable = None;
+                    return Poll::Ready(res);
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.readable.is_none() {
+                let inner = self.inner.clone();
+                self.readable = Some(Box::pin(async move { inner.readable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.readable {
+                ready!(f.as_mut().poll(cx))?;
+                self.readable = None;
+            }
+        }
     }
 }
 
 impl AsyncWrite for UnixStream {
     fn poll_write(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self).poll_write(cx, buf)
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
+
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().write(buf) {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.writable = None;
+                    return Poll::Ready(res);
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.writable.is_none() {
+                let inner = self.inner.clone();
+                self.writable = Some(Box::pin(async move { inner.writable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.writable {
+                ready!(f.as_mut().poll(cx))?;
+                self.writable = None;
+            }
+        }
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self).poll_flush(cx)
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
+
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().flush() {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.writable = None;
+                    return Poll::Ready(res);
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.writable.is_none() {
+                let inner = self.inner.clone();
+                self.writable = Some(Box::pin(async move { inner.writable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.writable {
+                ready!(f.as_mut().poll(cx))?;
+                self.writable = None;
+            }
+        }
     }
 
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self).poll_close(cx)
-    }
-}
-
-impl AsyncWrite for &UnixStream {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self.0).poll_write(cx, buf)
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self.0).poll_flush(cx)
-    }
-
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self.0).poll_close(cx)
+    fn poll_close(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Poll::Ready(self.inner.get_ref().shutdown(Shutdown::Write))
     }
 }
 
@@ -407,9 +480,15 @@ impl AsyncWrite for &UnixStream {
 /// # std::io::Result::Ok(()) });
 /// ```
 #[derive(Clone, Debug)]
-pub struct UnixDatagram(Arc<Async<std::os::unix::net::UnixDatagram>>);
+pub struct UnixDatagram {
+    inner: Arc<Async<std::os::unix::net::UnixDatagram>>,
+}
 
 impl UnixDatagram {
+    fn new(inner: Arc<Async<std::os::unix::net::UnixDatagram>>) -> UnixDatagram {
+        UnixDatagram { inner }
+    }
+
     /// Creates a new [`UnixDatagram`] bound to the given address.
     ///
     /// # Examples
@@ -422,9 +501,8 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn bind<P: AsRef<Path>>(path: P) -> io::Result<UnixDatagram> {
-        let path = path.as_ref().to_owned();
         let socket = Async::<std::os::unix::net::UnixDatagram>::bind(path)?;
-        Ok(UnixDatagram(Arc::new(socket)))
+        Ok(UnixDatagram::new(Arc::new(socket)))
     }
 
     /// Creates a Unix datagram socket not bound to any address.
@@ -439,8 +517,8 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn unbound() -> io::Result<UnixDatagram> {
-        let socket = std::os::unix::net::UnixDatagram::unbound()?;
-        Ok(UnixDatagram(Arc::new(Async::new(socket)?)))
+        let socket = Async::<std::os::unix::net::UnixDatagram>::unbound()?;
+        Ok(UnixDatagram::new(Arc::new(socket)))
     }
 
     /// Creates a pair of connected Unix datagram sockets.
@@ -455,10 +533,11 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn pair() -> io::Result<(UnixDatagram, UnixDatagram)> {
-        let (a, b) = std::os::unix::net::UnixDatagram::pair()?;
-        let a = UnixDatagram(Arc::new(Async::new(a)?));
-        let b = UnixDatagram(Arc::new(Async::new(b)?));
-        Ok((a, b))
+        let (a, b) = Async::<std::os::unix::net::UnixDatagram>::pair()?;
+        Ok((
+            UnixDatagram::new(Arc::new(a)),
+            UnixDatagram::new(Arc::new(b)),
+        ))
     }
 
     /// Connects the Unix datagram socket to the given address.
@@ -481,7 +560,7 @@ impl UnixDatagram {
     /// ```
     pub fn connect<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
         let p = path.as_ref();
-        self.0.get_ref().connect(p)
+        self.inner.get_ref().connect(p)
     }
 
     /// Returns the local address this socket is bound to.
@@ -497,7 +576,7 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().local_addr()
+        self.inner.get_ref().local_addr()
     }
 
     /// Returns the remote address this socket is connected to.
@@ -514,7 +593,7 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().peer_addr()
+        self.inner.get_ref().peer_addr()
     }
 
     /// Receives data from an address.
@@ -535,7 +614,7 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.0.recv_from(buf).await
+        self.inner.recv_from(buf).await
     }
 
     /// Sends data to the given address.
@@ -553,7 +632,7 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn send_to<P: AsRef<Path>>(&self, buf: &[u8], path: P) -> io::Result<usize> {
-        self.0.send_to(buf, path.as_ref()).await
+        self.inner.send_to(buf, path.as_ref()).await
     }
 
     /// Receives data from the connected address.
@@ -574,7 +653,7 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.recv(buf).await
+        self.inner.recv(buf).await
     }
 
     /// Sends data to the connected address.
@@ -593,7 +672,7 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn send(&self, buf: &[u8]) -> io::Result<usize> {
-        self.0.send(buf).await
+        self.inner.send(buf).await
     }
 
     /// Shuts down the read half, write half, or both halves of this socket.
@@ -612,13 +691,13 @@ impl UnixDatagram {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.0.get_ref().shutdown(how)
+        self.inner.get_ref().shutdown(how)
     }
 }
 
 impl From<Async<std::os::unix::net::UnixDatagram>> for UnixDatagram {
     fn from(socket: Async<std::os::unix::net::UnixDatagram>) -> UnixDatagram {
-        UnixDatagram(Arc::new(socket))
+        UnixDatagram::new(Arc::new(socket))
     }
 }
 
@@ -626,20 +705,20 @@ impl TryFrom<std::os::unix::net::UnixDatagram> for UnixDatagram {
     type Error = io::Error;
 
     fn try_from(socket: std::os::unix::net::UnixDatagram) -> io::Result<UnixDatagram> {
-        Ok(UnixDatagram(Arc::new(Async::new(socket)?)))
+        Ok(UnixDatagram::new(Arc::new(Async::new(socket)?)))
     }
 }
 
 #[cfg(unix)]
 impl AsRawFd for UnixDatagram {
     fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
+        self.inner.as_raw_fd()
     }
 }
 
 #[cfg(windows)]
 impl AsRawSocket for UnixDatagram {
     fn as_raw_socket(&self) -> RawSocket {
-        self.0.as_raw_socket()
+        self.inner.as_raw_socket()
     }
 }

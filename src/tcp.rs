@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
-use std::io::{IoSlice, IoSliceMut};
-use std::net::SocketAddr;
+use std::fmt;
+use std::io::{Read as _, Write as _};
+use std::net::{Shutdown, SocketAddr};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
 #[cfg(windows)]
@@ -45,9 +46,15 @@ use crate::addr::AsyncToSocketAddrs;
 /// # std::io::Result::Ok(()) });
 /// ```
 #[derive(Clone, Debug)]
-pub struct TcpListener(Arc<Async<std::net::TcpListener>>);
+pub struct TcpListener {
+    inner: Arc<Async<std::net::TcpListener>>,
+}
 
 impl TcpListener {
+    fn new(inner: Arc<Async<std::net::TcpListener>>) -> TcpListener {
+        TcpListener { inner }
+    }
+
     /// Creates a new [`TcpListener`] bound to the given address.
     ///
     /// Binding with a port number of 0 will request that the operating system assigns an available
@@ -88,7 +95,7 @@ impl TcpListener {
 
         for addr in addr.to_socket_addrs().await? {
             match Async::<std::net::TcpListener>::bind(addr) {
-                Ok(listener) => return Ok(TcpListener(Arc::new(listener))),
+                Ok(listener) => return Ok(TcpListener::new(Arc::new(listener))),
                 Err(err) => last_err = Some(err),
             }
         }
@@ -115,7 +122,7 @@ impl TcpListener {
     /// println!("Listening on {}", listener.local_addr()?);
     /// # std::io::Result::Ok(()) });
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().local_addr()
+        self.inner.get_ref().local_addr()
     }
 
     /// Accepts a new incoming connection.
@@ -133,9 +140,8 @@ impl TcpListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
-        let (stream, addr) = self.0.accept().await?;
-        let stream = TcpStream(Arc::new(stream));
-        Ok((stream, addr))
+        let (stream, addr) = self.inner.accept().await?;
+        Ok((TcpStream::new(Arc::new(stream)), addr))
     }
 
     /// Returns a stream of incoming connections.
@@ -161,7 +167,7 @@ impl TcpListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn incoming(&self) -> Incoming<'_> {
-        Incoming(self)
+        Incoming { listener: self }
     }
 
     /// Gets the value of the `IP_TTL` option for this socket.
@@ -181,7 +187,7 @@ impl TcpListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn ttl(&self) -> io::Result<u32> {
-        self.0.get_ref().ttl()
+        self.inner.get_ref().ttl()
     }
 
     /// Sets the value of the `IP_TTL` option for this socket.
@@ -200,13 +206,13 @@ impl TcpListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
-        self.0.get_ref().set_ttl(ttl)
+        self.inner.get_ref().set_ttl(ttl)
     }
 }
 
 impl From<Async<std::net::TcpListener>> for TcpListener {
     fn from(listener: Async<std::net::TcpListener>) -> TcpListener {
-        TcpListener(Arc::new(listener))
+        TcpListener::new(Arc::new(listener))
     }
 }
 
@@ -214,21 +220,21 @@ impl TryFrom<std::net::TcpListener> for TcpListener {
     type Error = io::Error;
 
     fn try_from(listener: std::net::TcpListener) -> io::Result<TcpListener> {
-        Ok(TcpListener(Arc::new(Async::new(listener)?)))
+        Ok(TcpListener::new(Arc::new(Async::new(listener)?)))
     }
 }
 
 #[cfg(unix)]
 impl AsRawFd for TcpListener {
     fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
+        self.inner.as_raw_fd()
     }
 }
 
 #[cfg(windows)]
 impl AsRawSocket for TcpListener {
     fn as_raw_socket(&self) -> RawSocket {
-        self.0.as_raw_socket()
+        self.inner.as_raw_socket()
     }
 }
 
@@ -237,13 +243,15 @@ impl AsRawSocket for TcpListener {
 /// This stream is infinite, i.e awaiting the next connection will never result in [`None`]. It is
 /// created by the [`TcpListener::incoming()`] method.
 #[derive(Debug)]
-pub struct Incoming<'a>(&'a TcpListener);
+pub struct Incoming<'a> {
+    listener: &'a TcpListener,
+}
 
 impl<'a> Stream for Incoming<'a> {
     type Item = io::Result<TcpStream>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let future = self.0.accept();
+        let future = self.listener.accept();
         pin!(future);
 
         let (socket, _) = ready!(future.poll(cx))?;
@@ -281,10 +289,21 @@ impl<'a> Stream for Incoming<'a> {
 /// let n = stream.read(&mut buf).await?;
 /// # std::io::Result::Ok(()) });
 /// ```
-#[derive(Clone, Debug)]
-pub struct TcpStream(Arc<Async<std::net::TcpStream>>);
+pub struct TcpStream {
+    inner: Arc<Async<std::net::TcpStream>>,
+    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
+    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
+}
 
 impl TcpStream {
+    fn new(inner: Arc<Async<std::net::TcpStream>>) -> TcpStream {
+        TcpStream {
+            inner,
+            readable: None,
+            writable: None,
+        }
+    }
+
     /// Creates a TCP connection to the specified address.
     ///
     /// This method will create a new TCP socket and attempt to connect it to the provided `addr`,
@@ -323,7 +342,7 @@ impl TcpStream {
 
         for addr in addr.to_socket_addrs().await? {
             match Async::<std::net::TcpStream>::connect(addr).await {
-                Ok(stream) => return Ok(TcpStream(Arc::new(stream))),
+                Ok(stream) => return Ok(TcpStream::new(Arc::new(stream))),
                 Err(e) => last_err = Some(e),
             }
         }
@@ -349,7 +368,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().local_addr()
+        self.inner.get_ref().local_addr()
     }
 
     /// Returns the remote address this stream is connected to.
@@ -365,7 +384,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().peer_addr()
+        self.inner.get_ref().peer_addr()
     }
 
     /// Shuts down the read half, write half, or both halves of this connection.
@@ -386,7 +405,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn shutdown(&self, how: std::net::Shutdown) -> std::io::Result<()> {
-        self.0.get_ref().shutdown(how)
+        self.inner.get_ref().shutdown(how)
     }
 
     /// Receives data without removing it from the queue.
@@ -409,7 +428,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn peek(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.peek(buf).await
+        self.inner.peek(buf).await
     }
 
     /// Gets the value of the `TCP_NODELAY` option for this socket.
@@ -434,7 +453,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn nodelay(&self) -> io::Result<bool> {
-        self.0.get_ref().nodelay()
+        self.inner.get_ref().nodelay()
     }
 
     /// Sets the value of the `TCP_NODELAY` option for this socket.
@@ -459,7 +478,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_nodelay(&self, nodelay: bool) -> io::Result<()> {
-        self.0.get_ref().set_nodelay(nodelay)
+        self.inner.get_ref().set_nodelay(nodelay)
     }
 
     /// Gets the value of the `IP_TTL` option for this socket.
@@ -478,7 +497,7 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn ttl(&self) -> io::Result<u32> {
-        self.0.get_ref().ttl()
+        self.inner.get_ref().ttl()
     }
 
     /// Sets the value of the `IP_TTL` option for this socket.
@@ -497,13 +516,25 @@ impl TcpStream {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
-        self.0.get_ref().set_ttl(ttl)
+        self.inner.get_ref().set_ttl(ttl)
+    }
+}
+
+impl fmt::Debug for TcpStream {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.inner.fmt(f)
+    }
+}
+
+impl Clone for TcpStream {
+    fn clone(&self) -> TcpStream {
+        TcpStream::new(self.inner.clone())
     }
 }
 
 impl From<Async<std::net::TcpStream>> for TcpStream {
     fn from(stream: Async<std::net::TcpStream>) -> TcpStream {
-        TcpStream(Arc::new(stream))
+        TcpStream::new(Arc::new(stream))
     }
 }
 
@@ -511,92 +542,120 @@ impl TryFrom<std::net::TcpStream> for TcpStream {
     type Error = io::Error;
 
     fn try_from(stream: std::net::TcpStream) -> io::Result<TcpStream> {
-        Ok(TcpStream(Arc::new(Async::new(stream)?)))
+        Ok(TcpStream::new(Arc::new(Async::new(stream)?)))
     }
 }
 
 #[cfg(unix)]
 impl AsRawFd for TcpStream {
     fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
+        self.inner.as_raw_fd()
     }
 }
 
 #[cfg(windows)]
 impl AsRawSocket for TcpStream {
     fn as_raw_socket(&self) -> RawSocket {
-        self.0.as_raw_socket()
+        self.inner.as_raw_socket()
     }
 }
 
 impl AsyncRead for TcpStream {
     fn poll_read(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut [u8],
     ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self).poll_read(cx, buf)
-    }
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
 
-    fn poll_read_vectored(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        bufs: &mut [IoSliceMut<'_>],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self).poll_read_vectored(cx, bufs)
-    }
-}
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().read(buf) {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.readable = None;
+                    return Poll::Ready(res);
+                }
+            }
 
-impl AsyncRead for &TcpStream {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self.0).poll_read(cx, buf)
+            // Initialize the future to wait for readiness.
+            if self.readable.is_none() {
+                let inner = self.inner.clone();
+                self.readable = Some(Box::pin(async move { inner.readable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.readable {
+                ready!(f.as_mut().poll(cx))?;
+                self.readable = None;
+            }
+        }
     }
 }
 
 impl AsyncWrite for TcpStream {
     fn poll_write(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self).poll_write(cx, buf)
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
+
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().write(buf) {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.writable = None;
+                    return Poll::Ready(res);
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.writable.is_none() {
+                let inner = self.inner.clone();
+                self.writable = Some(Box::pin(async move { inner.writable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.writable {
+                ready!(f.as_mut().poll(cx))?;
+                self.writable = None;
+            }
+        }
     }
 
-    fn poll_write_vectored(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        bufs: &[IoSlice<'_>],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self).poll_write_vectored(cx, bufs)
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
+
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().flush() {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.writable = None;
+                    return Poll::Ready(res);
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.writable.is_none() {
+                let inner = self.inner.clone();
+                self.writable = Some(Box::pin(async move { inner.writable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.writable {
+                ready!(f.as_mut().poll(cx))?;
+                self.writable = None;
+            }
+        }
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self).poll_flush(cx)
-    }
-
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self).poll_close(cx)
-    }
-}
-
-impl AsyncWrite for &TcpStream {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut &*self.0).poll_write(cx, buf)
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self.0).poll_flush(cx)
-    }
-
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut &*self.0).poll_close(cx)
+    fn poll_close(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Poll::Ready(self.inner.get_ref().shutdown(Shutdown::Write))
     }
 }

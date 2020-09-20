@@ -42,6 +42,7 @@ pub use tcp::{Incoming, TcpListener, TcpStream};
 pub use udp::UdpSocket;
 
 use std::io;
+use std::task::{Context, Poll};
 
 #[doc(no_inline)]
 pub use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV4, SocketAddrV6};
@@ -62,4 +63,14 @@ pub use std::net::AddrParseError;
 /// ```
 pub async fn resolve<A: AsyncToSocketAddrs>(addr: A) -> io::Result<Vec<SocketAddr>> {
     Ok(addr.to_socket_addrs().await?.collect())
+}
+
+/// Yield with some small probability.
+fn maybe_yield(cx: &mut Context<'_>) -> Poll<()> {
+    if fastrand::usize(..100) == 0 {
+        cx.waker().wake_by_ref();
+        Poll::Pending
+    } else {
+        Poll::Ready(())
+    }
 }

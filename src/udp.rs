@@ -52,9 +52,15 @@ use crate::addr::AsyncToSocketAddrs;
 /// # std::io::Result::Ok(()) });
 /// ```
 #[derive(Clone, Debug)]
-pub struct UdpSocket(Arc<Async<std::net::UdpSocket>>);
+pub struct UdpSocket {
+    inner: Arc<Async<std::net::UdpSocket>>,
+}
 
 impl UdpSocket {
+    fn new(inner: Arc<Async<std::net::UdpSocket>>) -> UdpSocket {
+        UdpSocket { inner }
+    }
+
     /// Creates a new [`UdpSocket`] bound to the given address.
     ///
     /// Binding with a port number of 0 will request that the operating system assigns an available
@@ -96,7 +102,7 @@ impl UdpSocket {
 
         for addr in addr.to_socket_addrs().await? {
             match Async::<std::net::UdpSocket>::bind(addr) {
-                Ok(socket) => return Ok(UdpSocket(Arc::new(socket))),
+                Ok(socket) => return Ok(UdpSocket::new(Arc::new(socket))),
                 Err(err) => last_err = Some(err),
             }
         }
@@ -127,7 +133,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().local_addr()
+        self.inner.get_ref().local_addr()
     }
 
     /// Returns the remote address this socket is connected to.
@@ -144,7 +150,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.0.get_ref().peer_addr()
+        self.inner.get_ref().peer_addr()
     }
 
     /// Connects the UDP socket to an address.
@@ -172,7 +178,7 @@ impl UdpSocket {
         let mut last_err = None;
 
         for addr in addr.to_socket_addrs().await? {
-            match self.0.get_ref().connect(addr) {
+            match self.inner.get_ref().connect(addr) {
                 Ok(()) => return Ok(()),
                 Err(err) => last_err = Some(err),
             }
@@ -207,7 +213,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.0.recv_from(buf).await
+        self.inner.recv_from(buf).await
     }
 
     /// Receives a single datagram message without removing it from the queue.
@@ -234,7 +240,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn peek_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.0.get_ref().peek_from(buf)
+        self.inner.get_ref().peek_from(buf)
     }
 
     /// Sends data to the given address.
@@ -264,7 +270,7 @@ impl UdpSocket {
             }
         };
 
-        self.0.send_to(buf, addr).await
+        self.inner.send_to(buf, addr).await
     }
 
     /// Receives a single datagram message from the connected address.
@@ -292,7 +298,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.recv(buf).await
+        self.inner.recv(buf).await
     }
 
     /// Receives a single datagram from the connected address without removing it from the queue.
@@ -323,7 +329,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn peek(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.peek(buf).await
+        self.inner.peek(buf).await
     }
 
     /// Sends data to the connected address.
@@ -343,7 +349,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn send(&self, buf: &[u8]) -> io::Result<usize> {
-        self.0.send(buf).await
+        self.inner.send(buf).await
     }
 
     /// Gets the value of the `SO_BROADCAST` option for this socket.
@@ -361,7 +367,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn broadcast(&self) -> io::Result<bool> {
-        self.0.get_ref().broadcast()
+        self.inner.get_ref().broadcast()
     }
 
     /// Sets the value of the `SO_BROADCAST` option for this socket.
@@ -379,7 +385,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_broadcast(&self, broadcast: bool) -> io::Result<()> {
-        self.0.get_ref().set_broadcast(broadcast)
+        self.inner.get_ref().set_broadcast(broadcast)
     }
 
     /// Gets the value of the `IP_MULTICAST_LOOP` option for this socket.
@@ -399,7 +405,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn multicast_loop_v4(&self) -> io::Result<bool> {
-        self.0.get_ref().multicast_loop_v4()
+        self.inner.get_ref().multicast_loop_v4()
     }
 
     /// Sets the value of the `IP_MULTICAST_LOOP` option for this socket.
@@ -419,7 +425,9 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_multicast_loop_v4(&self, multicast_loop_v4: bool) -> io::Result<()> {
-        self.0.get_ref().set_multicast_loop_v4(multicast_loop_v4)
+        self.inner
+            .get_ref()
+            .set_multicast_loop_v4(multicast_loop_v4)
     }
 
     /// Gets the value of the `IP_MULTICAST_TTL` option for this socket.
@@ -441,7 +449,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn multicast_ttl_v4(&self) -> io::Result<u32> {
-        self.0.get_ref().multicast_ttl_v4()
+        self.inner.get_ref().multicast_ttl_v4()
     }
 
     /// Sets the value of the `IP_MULTICAST_TTL` option for this socket.
@@ -463,7 +471,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_multicast_ttl_v4(&self, ttl: u32) -> io::Result<()> {
-        self.0.get_ref().set_multicast_ttl_v4(ttl)
+        self.inner.get_ref().set_multicast_ttl_v4(ttl)
     }
 
     /// Gets the value of the `IPV6_MULTICAST_LOOP` option for this socket.
@@ -483,7 +491,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn multicast_loop_v6(&self) -> io::Result<bool> {
-        self.0.get_ref().multicast_loop_v6()
+        self.inner.get_ref().multicast_loop_v6()
     }
 
     /// Sets the value of the `IPV6_MULTICAST_LOOP` option for this socket.
@@ -503,7 +511,9 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_multicast_loop_v6(&self, multicast_loop_v6: bool) -> io::Result<()> {
-        self.0.get_ref().set_multicast_loop_v6(multicast_loop_v6)
+        self.inner
+            .get_ref()
+            .set_multicast_loop_v6(multicast_loop_v6)
     }
 
     /// Gets the value of the `IP_TTL` option for this socket.
@@ -522,7 +532,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn ttl(&self) -> io::Result<u32> {
-        self.0.get_ref().ttl()
+        self.inner.get_ref().ttl()
     }
 
     /// Sets the value of the `IP_TTL` option for this socket.
@@ -541,7 +551,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
-        self.0.get_ref().set_ttl(ttl)
+        self.inner.get_ref().set_ttl(ttl)
     }
 
     /// Executes an operation of the `IP_ADD_MEMBERSHIP` type.
@@ -551,7 +561,9 @@ impl UdpSocket {
     /// with which the system should join the multicast group. If it's equal to `INADDR_ANY` then
     /// an appropriate interface is chosen by the system.
     pub fn join_multicast_v4(&self, multiaddr: Ipv4Addr, interface: Ipv4Addr) -> io::Result<()> {
-        self.0.get_ref().join_multicast_v4(&multiaddr, &interface)
+        self.inner
+            .get_ref()
+            .join_multicast_v4(&multiaddr, &interface)
     }
 
     /// Executes an operation of the `IP_DROP_MEMBERSHIP` type.
@@ -559,7 +571,9 @@ impl UdpSocket {
     /// This method leaves a multicast group. Argument `multiaddr` must be a valid multicast
     /// address, and `interface` is the index of the interface to leave.
     pub fn leave_multicast_v4(&self, multiaddr: Ipv4Addr, interface: Ipv4Addr) -> io::Result<()> {
-        self.0.get_ref().leave_multicast_v4(&multiaddr, &interface)
+        self.inner
+            .get_ref()
+            .leave_multicast_v4(&multiaddr, &interface)
     }
 
     /// Executes an operation of the `IPV6_ADD_MEMBERSHIP` type.
@@ -568,7 +582,7 @@ impl UdpSocket {
     /// must be a valid multicast address, and `interface` is the index of the interface to join
     /// (or 0 to indicate any interface).
     pub fn join_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
-        self.0.get_ref().join_multicast_v6(multiaddr, interface)
+        self.inner.get_ref().join_multicast_v6(multiaddr, interface)
     }
 
     /// Executes an operation of the `IPV6_DROP_MEMBERSHIP` type.
@@ -576,13 +590,15 @@ impl UdpSocket {
     /// This method leaves a multicast group. Argument `multiaddr` must be a valid multicast
     /// address, and `interface` is the index of the interface to leave.
     pub fn leave_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
-        self.0.get_ref().leave_multicast_v6(multiaddr, interface)
+        self.inner
+            .get_ref()
+            .leave_multicast_v6(multiaddr, interface)
     }
 }
 
 impl From<Async<std::net::UdpSocket>> for UdpSocket {
     fn from(socket: Async<std::net::UdpSocket>) -> UdpSocket {
-        UdpSocket(Arc::new(socket))
+        UdpSocket::new(Arc::new(socket))
     }
 }
 
@@ -590,20 +606,20 @@ impl TryFrom<std::net::UdpSocket> for UdpSocket {
     type Error = io::Error;
 
     fn try_from(socket: std::net::UdpSocket) -> io::Result<UdpSocket> {
-        Ok(UdpSocket(Arc::new(Async::new(socket)?)))
+        Ok(UdpSocket::new(Arc::new(Async::new(socket)?)))
     }
 }
 
 #[cfg(unix)]
 impl AsRawFd for UdpSocket {
     fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
+        self.inner.as_raw_fd()
     }
 }
 
 #[cfg(windows)]
 impl AsRawSocket for UdpSocket {
     fn as_raw_socket(&self) -> RawSocket {
-        self.0.as_raw_socket()
+        self.inner.as_raw_socket()
     }
 }
