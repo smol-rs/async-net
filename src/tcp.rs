@@ -291,8 +291,8 @@ impl<'a> Stream for Incoming<'a> {
 /// ```
 pub struct TcpStream {
     inner: Arc<Async<std::net::TcpStream>>,
-    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
-    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
+    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
+    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
 }
 
 impl TcpStream {

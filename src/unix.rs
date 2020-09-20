@@ -219,8 +219,8 @@ impl Stream for Incoming<'_> {
 /// ```
 pub struct UnixStream {
     inner: Arc<Async<std::os::unix::net::UnixStream>>,
-    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
-    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send>>>,
+    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
+    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
 }
 
 impl UnixStream {
