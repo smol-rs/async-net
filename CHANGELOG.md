@@ -1,3 +1,7 @@
+# Version 1.4.2
+
+- Make `TcpStream` and `UnixStream` unwind-safe.
+
 # Version 1.4.1
 
 - Make `TcpStream` and `UnixStream` implement `Sync`.
