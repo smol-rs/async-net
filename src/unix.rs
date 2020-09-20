@@ -10,6 +10,7 @@ use std::net::Shutdown;
 use std::os::unix::io::{AsRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{AsRawSocket, RawSocket};
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -222,6 +223,9 @@ pub struct UnixStream {
     readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
     writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
 }
+
+impl UnwindSafe for UnixStream {}
+impl RefUnwindSafe for UnixStream {}
 
 impl UnixStream {
     fn new(inner: Arc<Async<std::os::unix::net::UnixStream>>) -> UnixStream {

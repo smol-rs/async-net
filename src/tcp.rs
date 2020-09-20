@@ -6,6 +6,7 @@ use std::net::{Shutdown, SocketAddr};
 use std::os::unix::io::{AsRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{AsRawSocket, RawSocket};
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -294,6 +295,9 @@ pub struct TcpStream {
     readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
     writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
 }
+
+impl UnwindSafe for TcpStream {}
+impl RefUnwindSafe for TcpStream {}
 
 impl TcpStream {
     fn new(inner: Arc<Async<std::net::TcpStream>>) -> TcpStream {
