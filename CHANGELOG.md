@@ -1,4 +1,8 @@
-# Version 1.4.2
+# Version 1.4.3
+
+- Minor nits in the docs.
+
+# Version 1.4.3
 
 - Make `TcpStream` and `UnixStream` unwind-safe.
 

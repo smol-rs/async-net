@@ -25,8 +25,8 @@ use crate::addr::AsyncToSocketAddrs;
 /// [`send()`][`UdpSocket::send()`] and [`recv()`][`UdpSocket::recv()`].
 ///
 /// As stated in the User Datagram Protocol's specification in [IETF RFC 768], UDP is an unordered,
-/// unreliable protocol. Refer to [`TcpListener`][`crate::TcpListener`] and
-/// [`TcpStream`][`crate::TcpStream`] for TCP primitives.
+/// unreliable protocol. Refer to [`TcpListener`][`super::TcpListener`] and
+/// [`TcpStream`][`super::TcpStream`] for TCP primitives.
 ///
 /// [received from]: UdpSocket::recv_from()
 /// [sent to]: UdpSocket::send_to()

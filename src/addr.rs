@@ -14,7 +14,7 @@ use futures_lite::future;
 ///
 /// This trait currently only appears in function signatures and cannot be used directly.
 ///
-/// However, you can use the [`resolve()`][`crate::resolve()`] function to resolve addresses.
+/// However, you can use the [`resolve()`][`super::resolve()`] function to resolve addresses.
 pub trait AsyncToSocketAddrs: Sealed {}
 
 pub trait Sealed {
