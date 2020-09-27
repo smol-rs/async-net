@@ -1,3 +1,7 @@
+# Version 1.4.4
+
+- Store `readable` future inside `Incoming` struct.
+
 # Version 1.4.3
 
 - Minor nits in the docs.
