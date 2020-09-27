@@ -123,7 +123,10 @@ impl UnixListener {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub fn incoming(&self) -> Incoming<'_> {
-        Incoming { listener: self }
+        Incoming {
+            listener: self,
+            readable: None,
+        }
     }
 
     /// Returns the local address this listener is bound to.
@@ -175,20 +178,50 @@ impl AsRawSocket for UnixListener {
 ///
 /// This stream is infinite, i.e awaiting the next connection will never result in [`None`]. It is
 /// created by the [`UnixListener::incoming()`] method.
-#[derive(Debug)]
 pub struct Incoming<'a> {
     listener: &'a UnixListener,
+    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
 }
 
-impl Stream for Incoming<'_> {
+impl<'a> Stream for Incoming<'a> {
     type Item = io::Result<UnixStream>;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let future = self.listener.accept();
-        pin!(future);
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        loop {
+            // Yield with some small probability - this improves fairness.
+            ready!(crate::maybe_yield(cx));
 
-        let (socket, _) = ready!(future.poll(cx))?;
-        Poll::Ready(Some(Ok(socket)))
+            // Attempt the non-blocking operation.
+            match self.listener.inner.get_ref().accept() {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.readable = None;
+                    let (stream, _) = res?;
+                    let stream = UnixStream::new(Arc::new(Async::new(stream)?));
+                    return Poll::Ready(Some(Ok(stream)));
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.readable.is_none() {
+                let inner = self.listener.inner.clone();
+                self.readable = Some(Box::pin(async move { inner.readable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.readable {
+                ready!(f.as_mut().poll(cx))?;
+                self.readable = None;
+            }
+        }
+    }
+}
+
+impl fmt::Debug for Incoming<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Incoming")
+            .field("listener", self.listener)
+            .finish()
     }
 }
 
