@@ -1,3 +1,7 @@
+# Version 1.4.5
+
+- Don't poll `readiness()` future again after it has returned an error.
+
 # Version 1.4.4
 
 - Store `readable` future inside `Incoming` struct.
