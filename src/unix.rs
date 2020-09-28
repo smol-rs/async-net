@@ -125,7 +125,7 @@ impl UnixListener {
     pub fn incoming(&self) -> Incoming<'_> {
         Incoming {
             listener: self,
-            readable: None,
+            accept: None,
         }
     }
 
@@ -180,10 +180,12 @@ impl AsRawSocket for UnixListener {
 /// created by the [`UnixListener::incoming()`] method.
 pub struct Incoming<'a> {
     listener: &'a UnixListener,
-    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
+    accept: Option<
+        Pin<Box<dyn Future<Output = io::Result<(UnixStream, SocketAddr)>> + Send + Sync + 'a>>,
+    >,
 }
 
-impl<'a> Stream for Incoming<'a> {
+impl Stream for Incoming<'_> {
     type Item = io::Result<UnixStream>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -191,27 +193,14 @@ impl<'a> Stream for Incoming<'a> {
             // Yield with some small probability - this improves fairness.
             ready!(crate::maybe_yield(cx));
 
-            // Attempt the non-blocking operation.
-            match self.listener.inner.get_ref().accept() {
-                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
-                res => {
-                    self.readable = None;
-                    let (stream, _) = res?;
-                    let stream = UnixStream::new(Arc::new(Async::new(stream)?));
-                    return Poll::Ready(Some(Ok(stream)));
-                }
+            if self.accept.is_none() {
+                self.accept = Some(Box::pin(self.listener.accept()));
             }
 
-            // Initialize the future to wait for readiness.
-            if self.readable.is_none() {
-                let inner = self.listener.inner.clone();
-                self.readable = Some(Box::pin(async move { inner.readable().await }));
-            }
-
-            // Poll the future for readiness.
-            if let Some(f) = &mut self.readable {
-                ready!(f.as_mut().poll(cx))?;
-                self.readable = None;
+            if let Some(f) = &mut self.accept {
+                let res = ready!(f.as_mut().poll(cx));
+                self.accept = None;
+                return Poll::Ready(Some(res.map(|(stream, _)| stream)));
             }
         }
     }
@@ -418,8 +407,9 @@ impl AsyncRead for UnixStream {
 
             // Poll the future for readiness.
             if let Some(f) = &mut self.readable {
-                ready!(f.as_mut().poll(cx))?;
+                let res = ready!(f.as_mut().poll(cx));
                 self.readable = None;
+                res?;
             }
         }
     }
@@ -452,8 +442,9 @@ impl AsyncWrite for UnixStream {
 
             // Poll the future for readiness.
             if let Some(f) = &mut self.writable {
-                ready!(f.as_mut().poll(cx))?;
+                let res = ready!(f.as_mut().poll(cx));
                 self.writable = None;
+                res?;
             }
         }
     }
@@ -480,8 +471,9 @@ impl AsyncWrite for UnixStream {
 
             // Poll the future for readiness.
             if let Some(f) = &mut self.writable {
-                ready!(f.as_mut().poll(cx))?;
+                let res = ready!(f.as_mut().poll(cx));
                 self.writable = None;
+                res?;
             }
         }
     }
