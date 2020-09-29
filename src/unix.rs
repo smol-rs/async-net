@@ -190,9 +190,6 @@ impl Stream for Incoming<'_> {
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
-            // Yield with some small probability - this improves fairness.
-            ready!(crate::maybe_yield(cx));
-
             if self.accept.is_none() {
                 self.accept = Some(Box::pin(self.listener.accept()));
             }
@@ -387,9 +384,6 @@ impl AsyncRead for UnixStream {
         buf: &mut [u8],
     ) -> Poll<io::Result<usize>> {
         loop {
-            // Yield with some small probability - this improves fairness.
-            ready!(crate::maybe_yield(cx));
-
             // Attempt the non-blocking operation.
             match self.inner.get_ref().read(buf) {
                 Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
@@ -422,9 +416,6 @@ impl AsyncWrite for UnixStream {
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
         loop {
-            // Yield with some small probability - this improves fairness.
-            ready!(crate::maybe_yield(cx));
-
             // Attempt the non-blocking operation.
             match self.inner.get_ref().write(buf) {
                 Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
@@ -451,9 +442,6 @@ impl AsyncWrite for UnixStream {
 
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         loop {
-            // Yield with some small probability - this improves fairness.
-            ready!(crate::maybe_yield(cx));
-
             // Attempt the non-blocking operation.
             match self.inner.get_ref().flush() {
                 Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
