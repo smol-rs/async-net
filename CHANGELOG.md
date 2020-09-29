@@ -1,3 +1,7 @@
+# Version 1.4.6
+
+- Remove random yielding - rely on `async-io` for that instead.
+
 # Version 1.4.5
 
 - Don't poll `readiness()` future again after it has returned an error.
