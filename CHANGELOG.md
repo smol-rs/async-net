@@ -1,3 +1,7 @@
+# Version 1.4.7
+
+- Update `futures-lite`.
+
 # Version 1.4.6
 
 - Remove random yielding - rely on `async-io` for that instead.
