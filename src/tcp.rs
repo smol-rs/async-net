@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt;
-use std::io::{Read as _, Write as _};
+use std::io::{self, Read as _, Write as _};
 use std::net::{Shutdown, SocketAddr};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use async_io::Async;
-use futures_lite::*;
+use futures_lite::{prelude::*, ready};
 
 use crate::addr::AsyncToSocketAddrs;
 
@@ -34,7 +34,7 @@ use crate::addr::AsyncToSocketAddrs;
 ///
 /// ```no_run
 /// use async_net::TcpListener;
-/// use futures_lite::*;
+/// use futures_lite::prelude::*;
 ///
 /// # futures_lite::future::block_on(async {
 /// let listener = TcpListener::bind("127.0.0.1:8080").await?;
@@ -155,7 +155,7 @@ impl TcpListener {
     ///
     /// ```no_run
     /// use async_net::TcpListener;
-    /// use futures_lite::*;
+    /// use futures_lite::prelude::*;
     ///
     /// # futures_lite::future::block_on(async {
     /// let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -299,7 +299,7 @@ impl fmt::Debug for Incoming<'_> {
 ///
 /// ```no_run
 /// use async_net::TcpStream;
-/// use futures_lite::*;
+/// use futures_lite::prelude::*;
 ///
 /// # futures_lite::future::block_on(async {
 /// let mut stream = TcpStream::connect("127.0.0.1:8080").await?;

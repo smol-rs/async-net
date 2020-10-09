@@ -4,7 +4,7 @@
 
 use std::convert::TryFrom;
 use std::fmt;
-use std::io::{Read as _, Write as _};
+use std::io::{self, Read as _, Write as _};
 use std::net::Shutdown;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -20,7 +20,7 @@ use std::task::{Context, Poll};
 pub use std::os::unix::net::SocketAddr;
 
 use async_io::Async;
-use futures_lite::*;
+use futures_lite::{prelude::*, ready};
 
 /// A Unix server, listening for connections.
 ///
@@ -36,7 +36,7 @@ use futures_lite::*;
 ///
 /// ```no_run
 /// use async_net::unix::UnixListener;
-/// use futures_lite::*;
+/// use futures_lite::prelude::*;
 ///
 /// # futures_lite::future::block_on(async {
 /// let listener = UnixListener::bind("/tmp/socket")?;
@@ -64,7 +64,7 @@ impl UnixListener {
     ///
     /// ```no_run
     /// use async_net::unix::UnixListener;
-    /// use futures_lite::*;
+    /// use futures_lite::prelude::*;
     ///
     /// # futures_lite::future::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
@@ -110,7 +110,7 @@ impl UnixListener {
     ///
     /// ```no_run
     /// use async_net::unix::UnixListener;
-    /// use futures_lite::*;
+    /// use futures_lite::prelude::*;
     ///
     /// # futures_lite::future::block_on(async {
     /// let listener = UnixListener::bind("/tmp/socket")?;
@@ -227,7 +227,7 @@ impl fmt::Debug for Incoming<'_> {
 ///
 /// ```no_run
 /// use async_net::unix::UnixStream;
-/// use futures_lite::*;
+/// use futures_lite::prelude::*;
 ///
 /// # futures_lite::future::block_on(async {
 /// let mut stream = UnixStream::connect("/tmp/socket").await?;
