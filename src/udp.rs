@@ -610,6 +610,12 @@ impl TryFrom<std::net::UdpSocket> for UdpSocket {
     }
 }
 
+impl Into<Arc<Async<std::net::UdpSocket>>> for UdpSocket {
+    fn into(self) -> Arc<Async<std::net::UdpSocket>> {
+        self.inner
+    }
+}
+
 #[cfg(unix)]
 impl AsRawFd for UdpSocket {
     fn as_raw_fd(&self) -> RawFd {

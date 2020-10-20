@@ -160,6 +160,12 @@ impl TryFrom<std::os::unix::net::UnixListener> for UnixListener {
     }
 }
 
+impl Into<Arc<Async<std::os::unix::net::UnixListener>>> for UnixListener {
+    fn into(self) -> Arc<Async<std::os::unix::net::UnixListener>> {
+        self.inner
+    }
+}
+
 #[cfg(unix)]
 impl AsRawFd for UnixListener {
     fn as_raw_fd(&self) -> RawFd {
@@ -360,6 +366,12 @@ impl TryFrom<std::os::unix::net::UnixStream> for UnixStream {
 
     fn try_from(stream: std::os::unix::net::UnixStream) -> io::Result<UnixStream> {
         Ok(UnixStream::new(Arc::new(Async::new(stream)?)))
+    }
+}
+
+impl Into<Arc<Async<std::os::unix::net::UnixStream>>> for UnixStream {
+    fn into(self) -> Arc<Async<std::os::unix::net::UnixStream>> {
+        self.inner
     }
 }
 
@@ -723,6 +735,12 @@ impl TryFrom<std::os::unix::net::UnixDatagram> for UnixDatagram {
 
     fn try_from(socket: std::os::unix::net::UnixDatagram) -> io::Result<UnixDatagram> {
         Ok(UnixDatagram::new(Arc::new(Async::new(socket)?)))
+    }
+}
+
+impl Into<Arc<Async<std::os::unix::net::UnixDatagram>>> for UnixDatagram {
+    fn into(self) -> Arc<Async<std::os::unix::net::UnixDatagram>> {
+        self.inner
     }
 }
 

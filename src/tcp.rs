@@ -228,6 +228,12 @@ impl TryFrom<std::net::TcpListener> for TcpListener {
     }
 }
 
+impl Into<Arc<Async<std::net::TcpListener>>> for TcpListener {
+    fn into(self) -> Arc<Async<std::net::TcpListener>> {
+        self.inner
+    }
+}
+
 #[cfg(unix)]
 impl AsRawFd for TcpListener {
     fn as_raw_fd(&self) -> RawFd {
@@ -558,6 +564,12 @@ impl Clone for TcpStream {
 impl From<Async<std::net::TcpStream>> for TcpStream {
     fn from(stream: Async<std::net::TcpStream>) -> TcpStream {
         TcpStream::new(Arc::new(stream))
+    }
+}
+
+impl Into<Arc<Async<std::net::TcpStream>>> for TcpStream {
+    fn into(self) -> Arc<Async<std::net::TcpStream>> {
+        self.inner
     }
 }
 
