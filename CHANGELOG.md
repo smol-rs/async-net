@@ -1,3 +1,7 @@
+# Version 1.5.0
+
+- Add `Into` impls for conversion into inner networking types `Arc<Async<T>>`.
+
 # Version 1.4.7
 
 - Update `futures-lite`.
