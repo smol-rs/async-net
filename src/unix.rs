@@ -159,9 +159,9 @@ impl TryFrom<std::os::unix::net::UnixListener> for UnixListener {
     }
 }
 
-impl Into<Arc<Async<std::os::unix::net::UnixListener>>> for UnixListener {
-    fn into(self) -> Arc<Async<std::os::unix::net::UnixListener>> {
-        self.inner
+impl From<UnixListener> for Arc<Async<std::os::unix::net::UnixListener>> {
+    fn from(val: UnixListener) -> Self {
+        val.inner
     }
 }
 
@@ -358,9 +358,9 @@ impl TryFrom<std::os::unix::net::UnixStream> for UnixStream {
     }
 }
 
-impl Into<Arc<Async<std::os::unix::net::UnixStream>>> for UnixStream {
-    fn into(self) -> Arc<Async<std::os::unix::net::UnixStream>> {
-        self.inner
+impl From<UnixStream> for Arc<Async<std::os::unix::net::UnixStream>> {
+    fn from(val: UnixStream) -> Self {
+        val.inner
     }
 }
 
@@ -727,9 +727,9 @@ impl TryFrom<std::os::unix::net::UnixDatagram> for UnixDatagram {
     }
 }
 
-impl Into<Arc<Async<std::os::unix::net::UnixDatagram>>> for UnixDatagram {
-    fn into(self) -> Arc<Async<std::os::unix::net::UnixDatagram>> {
-        self.inner
+impl From<UnixDatagram> for Arc<Async<std::os::unix::net::UnixDatagram>> {
+    fn from(val: UnixDatagram) -> Self {
+        val.inner
     }
 }
 
