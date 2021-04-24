@@ -1,6 +1,9 @@
 [package]
 name = "async-net"
-version = "1.5.0"
+# When publishing a new version:
+# - Update CHANGELOG.md
+# - Create "v1.x.y" git tag
+version = "1.6.0"
 authors = ["Stjepan Glavina <stjepang@gmail.com>"]
 edition = "2018"
 description = "Async networking primitives for TCP/UDP/Unix communication"
