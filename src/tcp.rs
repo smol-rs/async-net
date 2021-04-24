@@ -227,9 +227,9 @@ impl TryFrom<std::net::TcpListener> for TcpListener {
     }
 }
 
-impl Into<Arc<Async<std::net::TcpListener>>> for TcpListener {
-    fn into(self) -> Arc<Async<std::net::TcpListener>> {
-        self.inner
+impl From<TcpListener> for Arc<Async<std::net::TcpListener>> {
+    fn from(val: TcpListener) -> Self {
+        val.inner
     }
 }
 
@@ -553,9 +553,9 @@ impl From<Async<std::net::TcpStream>> for TcpStream {
     }
 }
 
-impl Into<Arc<Async<std::net::TcpStream>>> for TcpStream {
-    fn into(self) -> Arc<Async<std::net::TcpStream>> {
-        self.inner
+impl From<TcpStream> for Arc<Async<std::net::TcpStream>> {
+    fn from(val: TcpStream) -> Self {
+        val.inner
     }
 }
 
