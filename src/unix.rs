@@ -234,8 +234,8 @@ impl fmt::Debug for Incoming<'_> {
 /// ```
 pub struct UnixStream {
     inner: Arc<Async<std::os::unix::net::UnixStream>>,
-    readable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
-    writable: Option<Pin<Box<dyn Future<Output = io::Result<()>> + Send + Sync>>>,
+    readable: Option<async_io::Readable>,
+    writable: Option<async_io::Writable>,
 }
 
 impl UnwindSafe for UnixStream {}
@@ -396,13 +396,12 @@ impl AsyncRead for UnixStream {
 
             // Initialize the future to wait for readiness.
             if self.readable.is_none() {
-                let inner = self.inner.clone();
-                self.readable = Some(Box::pin(async move { inner.readable().await }));
+                self.readable = Some(self.inner.readable());
             }
 
             // Poll the future for readiness.
             if let Some(f) = &mut self.readable {
-                let res = ready!(f.as_mut().poll(cx));
+                let res = ready!(Pin::new(f).poll(cx));
                 self.readable = None;
                 res?;
             }
@@ -428,13 +427,12 @@ impl AsyncWrite for UnixStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                let inner = self.inner.clone();
-                self.writable = Some(Box::pin(async move { inner.writable().await }));
+                self.writable = Some(self.inner.writable());
             }
 
             // Poll the future for readiness.
             if let Some(f) = &mut self.writable {
-                let res = ready!(f.as_mut().poll(cx));
+                let res = ready!(Pin::new(f).poll(cx));
                 self.writable = None;
                 res?;
             }
@@ -454,13 +452,12 @@ impl AsyncWrite for UnixStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                let inner = self.inner.clone();
-                self.writable = Some(Box::pin(async move { inner.writable().await }));
+                self.writable = Some(self.inner.writable());
             }
 
             // Poll the future for readiness.
             if let Some(f) = &mut self.writable {
-                let res = ready!(f.as_mut().poll(cx));
+                let res = ready!(Pin::new(f).poll(cx));
                 self.writable = None;
                 res?;
             }
