@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt;
-use std::io::{self, Read as _, Write as _};
+use std::io::{self, IoSlice, Read as _, Write as _};
 use std::net::{Shutdown, SocketAddr};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -672,5 +672,35 @@ impl AsyncWrite for TcpStream {
 
     fn poll_close(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
         Poll::Ready(self.inner.get_ref().shutdown(Shutdown::Write))
+    }
+
+    fn poll_write_vectored(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        bufs: &[IoSlice<'_>],
+    ) -> Poll<io::Result<usize>> {
+        loop {
+            // Attempt the non-blocking operation.
+            match self.inner.get_ref().write_vectored(bufs) {
+                Err(err) if err.kind() == io::ErrorKind::WouldBlock => {}
+                res => {
+                    self.writable = None;
+                    return Poll::Ready(res);
+                }
+            }
+
+            // Initialize the future to wait for readiness.
+            if self.writable.is_none() {
+                let inner = self.inner.clone();
+                self.writable = Some(Box::pin(async move { inner.writable().await }));
+            }
+
+            // Poll the future for readiness.
+            if let Some(f) = &mut self.writable {
+                let res = ready!(f.as_mut().poll(cx));
+                self.writable = None;
+                res?;
+            }
+        }
     }
 }
