@@ -1,3 +1,8 @@
+# Version 1.6.1
+
+- Override `AsyncWrite::poll_write_vectored` for `TcpStream`.
+- Remove boxed futures from `TcpStream` and `UnixStream`.
+
 # Version 1.6.0
 
 - Add `From` impls for conversion into inner networking types `Arc<Async<T>>`. (#12)
