@@ -303,8 +303,8 @@ impl fmt::Debug for Incoming<'_> {
 /// ```
 pub struct TcpStream {
     inner: Arc<Async<std::net::TcpStream>>,
-    readable: Option<async_io::Readable>,
-    writable: Option<async_io::Writable>,
+    readable: Option<async_io::ReadableOwned<std::net::TcpStream>>,
+    writable: Option<async_io::WritableOwned<std::net::TcpStream>>,
 }
 
 impl UnwindSafe for TcpStream {}
@@ -599,7 +599,7 @@ impl AsyncRead for TcpStream {
 
             // Initialize the future to wait for readiness.
             if self.readable.is_none() {
-                self.readable = Some(self.inner.readable());
+                self.readable = Some(self.inner.clone().readable_owned());
             }
 
             // Poll the future for readiness.
@@ -630,7 +630,7 @@ impl AsyncWrite for TcpStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                self.writable = Some(self.inner.writable());
+                self.writable = Some(self.inner.clone().writable_owned());
             }
 
             // Poll the future for readiness.
@@ -655,7 +655,7 @@ impl AsyncWrite for TcpStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                self.writable = Some(self.inner.writable());
+                self.writable = Some(self.inner.clone().writable_owned());
             }
 
             // Poll the future for readiness.
@@ -688,7 +688,7 @@ impl AsyncWrite for TcpStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                self.writable = Some(self.inner.writable());
+                self.writable = Some(self.inner.clone().writable_owned());
             }
 
             // Poll the future for readiness.
