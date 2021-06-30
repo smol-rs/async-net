@@ -234,8 +234,8 @@ impl fmt::Debug for Incoming<'_> {
 /// ```
 pub struct UnixStream {
     inner: Arc<Async<std::os::unix::net::UnixStream>>,
-    readable: Option<async_io::Readable>,
-    writable: Option<async_io::Writable>,
+    readable: Option<async_io::ReadableOwned<std::os::unix::net::UnixStream>>,
+    writable: Option<async_io::WritableOwned<std::os::unix::net::UnixStream>>,
 }
 
 impl UnwindSafe for UnixStream {}
@@ -396,7 +396,7 @@ impl AsyncRead for UnixStream {
 
             // Initialize the future to wait for readiness.
             if self.readable.is_none() {
-                self.readable = Some(self.inner.readable());
+                self.readable = Some(self.inner.clone().readable_owned());
             }
 
             // Poll the future for readiness.
@@ -427,7 +427,7 @@ impl AsyncWrite for UnixStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                self.writable = Some(self.inner.writable());
+                self.writable = Some(self.inner.clone().writable_owned());
             }
 
             // Poll the future for readiness.
@@ -452,7 +452,7 @@ impl AsyncWrite for UnixStream {
 
             // Initialize the future to wait for readiness.
             if self.writable.is_none() {
-                self.writable = Some(self.inner.writable());
+                self.writable = Some(self.inner.clone().writable_owned());
             }
 
             // Poll the future for readiness.

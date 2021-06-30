@@ -15,7 +15,7 @@ keywords = ["networking", "uds", "mio", "reactor", "std"]
 categories = ["asynchronous", "network-programming", "os"]
 
 [dependencies]
-async-io = "1.5.0"
+async-io = "1.6.0"
 blocking = "1.0.0"
 fastrand = "1.3.5"
 futures-lite = "1.11.0"
