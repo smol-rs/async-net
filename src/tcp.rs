@@ -2,10 +2,14 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, IoSlice, Read as _, Write as _};
 use std::net::{Shutdown, SocketAddr};
+#[cfg(all(feature = "io_safety", unix))]
+use std::os::unix::io::{AsFd, BorrowedFd, OwnedFd};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{AsRawSocket, RawSocket};
+#[cfg(all(feature = "io_safety", windows))]
+use std::os::windows::io::{AsSocket, BorrowedSocket, OwnedSocket};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -240,10 +244,42 @@ impl AsRawFd for TcpListener {
     }
 }
 
+#[cfg(all(feature = "io_safety", unix))]
+impl AsFd for TcpListener {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.inner.get_ref().as_fd()
+    }
+}
+
+#[cfg(all(feature = "io_safety", unix))]
+impl TryFrom<OwnedFd> for TcpListener {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedFd) -> Result<Self, Self::Error> {
+        Self::try_from(std::net::TcpListener::from(value))
+    }
+}
+
 #[cfg(windows)]
 impl AsRawSocket for TcpListener {
     fn as_raw_socket(&self) -> RawSocket {
         self.inner.as_raw_socket()
+    }
+}
+
+#[cfg(all(feature = "io_safety", windows))]
+impl AsSocket for TcpListener {
+    fn as_socket(&self) -> BorrowedSocket<'_> {
+        self.inner.get_ref().as_socket()
+    }
+}
+
+#[cfg(all(feature = "io_safety", windows))]
+impl TryFrom<OwnedSocket> for TcpListener {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedSocket) -> Result<Self, Self::Error> {
+        Self::try_from(std::net::TcpListener::from(value))
     }
 }
 
@@ -574,10 +610,42 @@ impl AsRawFd for TcpStream {
     }
 }
 
+#[cfg(all(feature = "io_safety", unix))]
+impl AsFd for TcpStream {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.inner.get_ref().as_fd()
+    }
+}
+
+#[cfg(all(feature = "io_safety", unix))]
+impl TryFrom<OwnedFd> for TcpStream {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedFd) -> Result<Self, Self::Error> {
+        Self::try_from(std::net::TcpStream::from(value))
+    }
+}
+
 #[cfg(windows)]
 impl AsRawSocket for TcpStream {
     fn as_raw_socket(&self) -> RawSocket {
         self.inner.as_raw_socket()
+    }
+}
+
+#[cfg(all(feature = "io_safety", windows))]
+impl AsSocket for TcpStream {
+    fn as_socket(&self) -> BorrowedSocket<'_> {
+        self.inner.get_ref().as_socket()
+    }
+}
+
+#[cfg(all(feature = "io_safety", windows))]
+impl TryFrom<OwnedSocket> for TcpStream {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedSocket) -> Result<Self, Self::Error> {
+        Self::try_from(std::net::TcpStream::from(value))
     }
 }
 
