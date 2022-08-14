@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Read as _, Write as _};
 use std::net::Shutdown;
-#[cfg(feature = "io_safety")]
+#[cfg(has_io_safety)]
 use std::os::unix::io::{AsFd, BorrowedFd, OwnedFd};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -174,14 +174,14 @@ impl AsRawFd for UnixListener {
     }
 }
 
-#[cfg(all(feature = "io_safety", unix))]
+#[cfg(all(has_io_safety, unix))]
 impl AsFd for UnixListener {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.inner.get_ref().as_fd()
     }
 }
 
-#[cfg(all(feature = "io_safety", unix))]
+#[cfg(all(has_io_safety, unix))]
 impl TryFrom<OwnedFd> for UnixListener {
     type Error = io::Error;
 
@@ -389,14 +389,14 @@ impl AsRawFd for UnixStream {
     }
 }
 
-#[cfg(all(feature = "io_safety", unix))]
+#[cfg(all(has_io_safety, unix))]
 impl AsFd for UnixStream {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.inner.get_ref().as_fd()
     }
 }
 
-#[cfg(all(feature = "io_safety", unix))]
+#[cfg(all(has_io_safety, unix))]
 impl TryFrom<OwnedFd> for UnixStream {
     type Error = io::Error;
 

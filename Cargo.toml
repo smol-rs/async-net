@@ -21,5 +21,5 @@ async-io = "1.6.0"
 blocking = "1.0.0"
 futures-lite = "1.11.0"
 
-[features]
-io_safety = []
+[build-dependencies]
+autocfg = "1"
