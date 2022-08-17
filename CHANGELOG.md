@@ -1,3 +1,7 @@
+# Version 1.7.0
+
+- Implement I/O safety traits on Rust 1.63+ (#21)
+
 # Version 1.6.1
 
 - Override `AsyncWrite::poll_write_vectored` for `TcpStream`.
