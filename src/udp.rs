@@ -1,10 +1,14 @@
 use std::convert::TryFrom;
 use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
+#[cfg(all(not(async_net_no_io_safety), unix))]
+use std::os::unix::io::{AsFd, BorrowedFd, OwnedFd};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{AsRawSocket, RawSocket};
+#[cfg(all(not(async_net_no_io_safety), windows))]
+use std::os::windows::io::{AsSocket, BorrowedSocket, OwnedSocket};
 use std::sync::Arc;
 
 use async_io::Async;
@@ -623,9 +627,41 @@ impl AsRawFd for UdpSocket {
     }
 }
 
+#[cfg(all(not(async_net_no_io_safety), unix))]
+impl AsFd for UdpSocket {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.inner.get_ref().as_fd()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), unix))]
+impl TryFrom<OwnedFd> for UdpSocket {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedFd) -> Result<Self, Self::Error> {
+        Self::try_from(std::net::UdpSocket::from(value))
+    }
+}
+
 #[cfg(windows)]
 impl AsRawSocket for UdpSocket {
     fn as_raw_socket(&self) -> RawSocket {
         self.inner.as_raw_socket()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), windows))]
+impl AsSocket for UdpSocket {
+    fn as_socket(&self) -> BorrowedSocket<'_> {
+        self.inner.get_ref().as_socket()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), windows))]
+impl TryFrom<OwnedSocket> for UdpSocket {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedSocket) -> Result<Self, Self::Error> {
+        Self::try_from(std::net::UdpSocket::from(value))
     }
 }

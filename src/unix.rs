@@ -6,6 +6,8 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Read as _, Write as _};
 use std::net::Shutdown;
+#[cfg(not(async_net_no_io_safety))]
+use std::os::unix::io::{AsFd, BorrowedFd, OwnedFd};
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
 #[cfg(windows)]
@@ -169,6 +171,22 @@ impl From<UnixListener> for Arc<Async<std::os::unix::net::UnixListener>> {
 impl AsRawFd for UnixListener {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), unix))]
+impl AsFd for UnixListener {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.inner.get_ref().as_fd()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), unix))]
+impl TryFrom<OwnedFd> for UnixListener {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedFd) -> Result<Self, Self::Error> {
+        Self::try_from(std::os::unix::net::UnixListener::from(value))
     }
 }
 
@@ -368,6 +386,22 @@ impl From<UnixStream> for Arc<Async<std::os::unix::net::UnixStream>> {
 impl AsRawFd for UnixStream {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), unix))]
+impl AsFd for UnixStream {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.inner.get_ref().as_fd()
+    }
+}
+
+#[cfg(all(not(async_net_no_io_safety), unix))]
+impl TryFrom<OwnedFd> for UnixStream {
+    type Error = io::Error;
+
+    fn try_from(value: OwnedFd) -> Result<Self, Self::Error> {
+        Self::try_from(std::os::unix::net::UnixStream::from(value))
     }
 }
 
