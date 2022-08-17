@@ -36,7 +36,7 @@
 
 - Minor nits in the docs.
 
-# Version 1.4.3
+# Version 1.4.2
 
 - Make `TcpStream` and `UnixStream` unwind-safe.
 
