@@ -2,14 +2,10 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, IoSlice, Read as _, Write as _};
 use std::net::{Shutdown, SocketAddr};
-#[cfg(all(not(async_net_no_io_safety), unix))]
-use std::os::unix::io::{AsFd, BorrowedFd, OwnedFd};
 #[cfg(unix)]
-use std::os::unix::io::{AsRawFd, RawFd};
+use std::os::unix::io::{AsFd, AsRawFd, BorrowedFd, OwnedFd, RawFd};
 #[cfg(windows)]
-use std::os::windows::io::{AsRawSocket, RawSocket};
-#[cfg(all(not(async_net_no_io_safety), windows))]
-use std::os::windows::io::{AsSocket, BorrowedSocket, OwnedSocket};
+use std::os::windows::io::{AsRawSocket, AsSocket, BorrowedSocket, OwnedSocket, RawSocket};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -244,14 +240,14 @@ impl AsRawFd for TcpListener {
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), unix))]
+#[cfg(unix)]
 impl AsFd for TcpListener {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.inner.get_ref().as_fd()
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), unix))]
+#[cfg(unix)]
 impl TryFrom<OwnedFd> for TcpListener {
     type Error = io::Error;
 
@@ -267,14 +263,14 @@ impl AsRawSocket for TcpListener {
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), windows))]
+#[cfg(windows)]
 impl AsSocket for TcpListener {
     fn as_socket(&self) -> BorrowedSocket<'_> {
         self.inner.get_ref().as_socket()
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), windows))]
+#[cfg(windows)]
 impl TryFrom<OwnedSocket> for TcpListener {
     type Error = io::Error;
 
@@ -610,14 +606,14 @@ impl AsRawFd for TcpStream {
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), unix))]
+#[cfg(unix)]
 impl AsFd for TcpStream {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.inner.get_ref().as_fd()
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), unix))]
+#[cfg(unix)]
 impl TryFrom<OwnedFd> for TcpStream {
     type Error = io::Error;
 
@@ -633,14 +629,14 @@ impl AsRawSocket for TcpStream {
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), windows))]
+#[cfg(windows)]
 impl AsSocket for TcpStream {
     fn as_socket(&self) -> BorrowedSocket<'_> {
         self.inner.get_ref().as_socket()
     }
 }
 
-#[cfg(all(not(async_net_no_io_safety), windows))]
+#[cfg(windows)]
 impl TryFrom<OwnedSocket> for TcpStream {
     type Error = io::Error;
 
