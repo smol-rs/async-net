@@ -1,3 +1,7 @@
+# Version 1.8.0
+
+- Bump MSRV to 1.63. (#23)
+
 # Version 1.7.0
 
 - Implement I/O safety traits on Rust 1.63+ (#21)
