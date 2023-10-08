@@ -2,7 +2,6 @@
 //!
 //! This module is an async version of [`std::os::unix::net`].
 
-use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Read as _, Write as _};
 use std::net::Shutdown;

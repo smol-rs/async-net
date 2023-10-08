@@ -5,7 +5,7 @@ name = "async-net"
 # - Create "v1.x.y" git tag
 version = "1.8.0"
 authors = ["Stjepan Glavina <stjepang@gmail.com>"]
-edition = "2018"
+edition = "2021"
 rust-version = "1.63"
 description = "Async networking primitives for TCP/UDP/Unix communication"
 license = "Apache-2.0 OR MIT"
