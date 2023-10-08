@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 #[cfg(unix)]

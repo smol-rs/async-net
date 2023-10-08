@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, IoSlice, Read as _, Write as _};
 use std::net::{Shutdown, SocketAddr};
