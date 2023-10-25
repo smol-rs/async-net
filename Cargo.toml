@@ -19,4 +19,4 @@ exclude = ["/.*"]
 [dependencies]
 async-io = "2.0.0"
 blocking = "1.0.0"
-futures-lite = "1.11.0"
+futures-lite = "2.0.0"
