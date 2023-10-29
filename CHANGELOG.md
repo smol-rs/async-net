@@ -1,3 +1,8 @@
+# Version 2.0.0
+
+- **Breaking:** Bump `async-io` to version 2.0.0. (#28)
+- Bump `futures-lite` to version 2.0.0. (#29)
+
 # Version 1.8.0
 
 - Bump MSRV to 1.63. (#23)
