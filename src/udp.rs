@@ -239,7 +239,7 @@ impl UdpSocket {
     /// # std::io::Result::Ok(()) });
     /// ```
     pub async fn peek_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.inner.get_ref().peek_from(buf)
+        self.inner.peek_from(buf).await
     }
 
     /// Sends data to the given address.
