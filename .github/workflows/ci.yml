@@ -28,6 +28,8 @@ defaults:
 jobs:
   fmt:
     uses: smol-rs/.github/.github/workflows/fmt.yml@main
+  clippy:
+    uses: smol-rs/.github/.github/workflows/clippy.yml@main
   security_audit:
     uses: smol-rs/.github/.github/workflows/security_audit.yml@main
     permissions:
@@ -44,7 +46,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         rust: [nightly, beta, stable]
     steps:
-      - uses: actions/checkout@v4
+      - uses: taiki-e/checkout-action@v1
       - name: Install Rust
         run: rustup update ${{ matrix.rust }} && rustup default ${{ matrix.rust }}
       - run: cargo build --all --all-features --all-targets
@@ -59,20 +61,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        # When updating this, the reminder to update the minimum supported
-        # Rust version in Cargo.toml.
-        rust: ['1.63']
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
-        run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
-      - run: cargo build
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        run: rustup update stable
-      - run: cargo clippy --all-features --all-targets
+      - uses: taiki-e/checkout-action@v1
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack build --rust-version
